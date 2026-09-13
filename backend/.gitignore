@@ -2,3 +2,12 @@ node_modules/
 dist/
 .env
 *.log
+coverage/
+
+/src/generated/prisma
+
+# Skills de agentes de IA gerados pelo `prisma init` (doc oficial, não é código do projeto)
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
