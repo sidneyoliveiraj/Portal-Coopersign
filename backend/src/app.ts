@@ -5,6 +5,7 @@ import { authRouter } from "./routes/auth.routes";
 import { usuarioRouter } from "./routes/usuario.routes";
 import { clienteRouter } from "./routes/cliente.routes";
 import { maquinaRouter } from "./routes/maquina.routes";
+import { materialRouter } from "./routes/material.routes";
 
 export const app = express();
 
@@ -16,3 +17,4 @@ app.use("/api/auth", authRouter);
 app.use("/api/usuarios", usuarioRouter);
 app.use("/api/clientes", clienteRouter);
 app.use("/api/maquinas", maquinaRouter);
+app.use("/api/materiais", materialRouter);
