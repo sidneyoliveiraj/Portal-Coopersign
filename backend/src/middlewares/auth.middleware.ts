@@ -1,13 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verificarToken, PayloadToken } from "../services/auth.service";
-
-declare global {
-  namespace Express {
-    interface Request {
-      usuario?: PayloadToken;
-    }
-  }
-}
+import { verificarToken } from "../services/auth.service";
 
 export function autenticar(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
