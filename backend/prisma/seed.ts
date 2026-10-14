@@ -12,7 +12,7 @@ async function main() {
   const senhaHash = await hashSenha("senha123");
 
   const usuario = await prisma.usuario.upsert({
-    where: { email: "admin@coopersign.dev" },
+    where: { organizacaoId_email: { organizacaoId: organizacao.id, email: "admin@coopersign.dev" } },
     update: {},
     create: {
       organizacaoId: organizacao.id,
@@ -30,7 +30,7 @@ async function main() {
   });
 
   await prisma.usuario.upsert({
-    where: { email: "admin@concorrente.dev" },
+    where: { organizacaoId_email: { organizacaoId: outraOrganizacao.id, email: "admin@concorrente.dev" } },
     update: {},
     create: {
       organizacaoId: outraOrganizacao.id,
@@ -42,7 +42,7 @@ async function main() {
   });
 
   await prisma.usuario.upsert({
-    where: { email: "operador@coopersign.dev" },
+    where: { organizacaoId_email: { organizacaoId: organizacao.id, email: "operador@coopersign.dev" } },
     update: {},
     create: {
       organizacaoId: organizacao.id,
