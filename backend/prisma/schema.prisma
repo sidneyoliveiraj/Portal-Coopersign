@@ -38,7 +38,7 @@ model Usuario {
   id            String   @id @default(uuid())
   organizacaoId String   @map("organizacao_id")
   nome          String
-  email         String   @unique
+  email         String
   senhaHash     String   @map("senha_hash")
   perfil        Perfil
   ativo         Boolean  @default(true)
@@ -46,6 +46,7 @@ model Usuario {
 
   organizacao Organizacao @relation(fields: [organizacaoId], references: [id])
 
+  @@unique([organizacaoId, email])
   @@map("usuario")
 }
 
@@ -61,6 +62,7 @@ model Cliente {
   organizacao Organizacao @relation(fields: [organizacaoId], references: [id])
   pedidos     Pedido[]
 
+  @@unique([organizacaoId, id])
   @@map("cliente")
 }
 
@@ -81,6 +83,7 @@ model Maquina {
   organizacao Organizacao @relation(fields: [organizacaoId], references: [id])
   pedidos     Pedido[]
 
+  @@unique([organizacaoId, id])
   @@map("maquina")
 }
 
@@ -94,6 +97,7 @@ model Material {
   organizacao Organizacao @relation(fields: [organizacaoId], references: [id])
   pedidos     Pedido[]
 
+  @@unique([organizacaoId, id])
   @@map("material")
 }
 
@@ -145,9 +149,9 @@ model Pedido {
   atualizadoEm   DateTime       @updatedAt @map("atualizado_em")
 
   organizacao      Organizacao        @relation(fields: [organizacaoId], references: [id])
-  cliente          Cliente            @relation(fields: [clienteId], references: [id])
-  material         Material           @relation(fields: [materialId], references: [id])
-  maquina          Maquina?           @relation(fields: [maquinaId], references: [id])
+  cliente          Cliente            @relation(fields: [organizacaoId, clienteId], references: [organizacaoId, id])
+  material         Material           @relation(fields: [organizacaoId, materialId], references: [organizacaoId, id])
+  maquina          Maquina?           @relation(fields: [organizacaoId, maquinaId], references: [organizacaoId, id], onDelete: Restrict)
   pedidoServicos   PedidoServico[]
   retrabalhos      Retrabalho[]
   ajustesValor     AjusteValor[]
