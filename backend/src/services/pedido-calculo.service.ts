@@ -1,4 +1,14 @@
+export class DimensaoInvalidaError extends Error {}
+
 export function calcularMetragem(largura: number, altura: number, quantidade: number): number {
+  if (!(largura > 0) || !(altura > 0)) {
+    throw new DimensaoInvalidaError("largura e altura devem ser maiores que zero");
+  }
+
+  if (!Number.isInteger(quantidade) || quantidade < 1) {
+    throw new DimensaoInvalidaError("quantidade deve ser um inteiro maior que zero");
+  }
+
   return largura * altura * quantidade;
 }
 

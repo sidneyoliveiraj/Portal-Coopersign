@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { calcularMetragem, calcularValorBase, calcularValorTotal } from "./pedido-calculo.service";
+import {
+  calcularMetragem,
+  calcularValorBase,
+  calcularValorTotal,
+  DimensaoInvalidaError,
+} from "./pedido-calculo.service";
 
 describe("calcularMetragem", () => {
   it("calcula metragem com dimensões inteiras", () => {
@@ -8,6 +13,22 @@ describe("calcularMetragem", () => {
 
   it("calcula metragem com dimensões fracionadas", () => {
     expect(calcularMetragem(1.5, 2.2, 3)).toBeCloseTo(9.9);
+  });
+
+  it("rejeita largura ou altura negativa", () => {
+    expect(() => calcularMetragem(-2, 3, 1)).toThrow(DimensaoInvalidaError);
+    expect(() => calcularMetragem(2, -3, 1)).toThrow(DimensaoInvalidaError);
+  });
+
+  it("rejeita dimensão zero ou inválida", () => {
+    expect(() => calcularMetragem(0, 3, 1)).toThrow(DimensaoInvalidaError);
+    expect(() => calcularMetragem(Number.NaN, 3, 1)).toThrow(DimensaoInvalidaError);
+  });
+
+  it("rejeita quantidade zero, negativa ou fracionada", () => {
+    expect(() => calcularMetragem(2, 3, 0)).toThrow(DimensaoInvalidaError);
+    expect(() => calcularMetragem(2, 3, -1)).toThrow(DimensaoInvalidaError);
+    expect(() => calcularMetragem(2, 3, 1.5)).toThrow(DimensaoInvalidaError);
   });
 });
 
