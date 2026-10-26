@@ -7,6 +7,7 @@ import { clienteRouter } from "./routes/cliente.routes";
 import { maquinaRouter } from "./routes/maquina.routes";
 import { materialRouter } from "./routes/material.routes";
 import { servicoAdicionalRouter } from "./routes/servico-adicional.routes";
+import { pedidoRouter } from "./routes/pedido.routes";
 
 export const app = express();
 
@@ -25,3 +26,4 @@ app.use("/api/clientes", clienteRouter);
 app.use("/api/maquinas", maquinaRouter);
 app.use("/api/materiais", materialRouter);
 app.use("/api/servicos-adicionais", servicoAdicionalRouter);
+app.use("/api/pedidos", pedidoRouter);
