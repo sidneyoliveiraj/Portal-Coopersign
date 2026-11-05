@@ -194,7 +194,7 @@ export function CadastroPage({ titulo, singular, caminho, chaveLista, campos, co
                   {coluna.rotulo}
                 </Table.Th>
               ))}
-              <Table.Th w={170}>Ações</Table.Th>
+              <Table.Th w={190}>Ações</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -206,7 +206,7 @@ export function CadastroPage({ titulo, singular, caminho, chaveLista, campos, co
                   </Table.Td>
                 ))}
                 <Table.Td>
-                  <Group gap="xs">
+                  <Group gap="xs" wrap="nowrap">
                     <Button size="xs" variant="default" onClick={() => abrir(item)}>
                       Editar
                     </Button>
