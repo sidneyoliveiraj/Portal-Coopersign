@@ -14,6 +14,14 @@ export function formatarMedidas(pedido: { largura: string; altura: string; quant
   return `${area.format(Number(pedido.largura))} × ${area.format(Number(pedido.altura))} m (${unidades})`;
 }
 
+export function hojeIso() {
+  return new Date().toLocaleDateString("en-CA");
+}
+
+export function inicioDoMes() {
+  return `${hojeIso().slice(0, 7)}-01`;
+}
+
 export function formatarData(valor: string) {
   return new Date(valor).toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }

@@ -91,9 +91,14 @@ export function DetalhePedidoPage() {
 
       <Group justify="space-between" mt="xs" mb="md">
         <Title order={3}>Pedido de {pedido.cliente.nome}</Title>
-        <Badge color={status.cor} variant="light" size="lg">
-          {status.rotulo}
-        </Badge>
+        <Group gap="sm">
+          <Button component={Link} to={`/pedidos/${pedido.id}/comprovante`} variant="default" size="xs">
+            Comprovante
+          </Button>
+          <Badge color={status.cor} variant="light" size="lg">
+            {status.rotulo}
+          </Badge>
+        </Group>
       </Group>
 
       <Grid gutter="lg">

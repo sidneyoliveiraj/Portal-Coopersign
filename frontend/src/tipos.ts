@@ -30,6 +30,8 @@ export type Pedido = {
   valorBase: string;
   valorTotal: string;
   criadoEm: string;
+  iniciadoEm?: string | null;
+  concluidoEm?: string | null;
   cliente: Cliente;
   material: Material;
   maquina?: Maquina | null;

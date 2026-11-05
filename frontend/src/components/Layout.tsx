@@ -36,6 +36,8 @@ export function Layout() {
         <NavLink component={RouterLink} to="/fila" label="Fila de produção" />
         {podeCriar && (
           <>
+            <NavLink component={RouterLink} to="/faturamento" label="Fechamento de conta" />
+            <NavLink component={RouterLink} to="/relatorios" label="Relatórios" />
             <Text size="xs" c="dimmed" fw={600} mt="md" mb={4} px="sm">
               Cadastros
             </Text>

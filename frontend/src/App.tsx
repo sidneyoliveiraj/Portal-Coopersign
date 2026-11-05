@@ -8,6 +8,9 @@ import { NovoPedidoPage } from "./pages/NovoPedidoPage";
 import { DetalhePedidoPage } from "./pages/DetalhePedidoPage";
 import { ValidacaoPage } from "./pages/ValidacaoPage";
 import { FilaPage } from "./pages/FilaPage";
+import { FaturamentoPage } from "./pages/FaturamentoPage";
+import { RelatoriosPage } from "./pages/RelatoriosPage";
+import { ComprovantePage } from "./pages/ComprovantePage";
 import { ClientesPage, MaquinasPage, MateriaisPage, ServicosPage, UsuariosPage } from "./pages/CadastrosPages";
 
 export function App() {
@@ -34,6 +37,7 @@ export function App() {
 
   return (
     <Routes>
+      <Route path="/pedidos/:id/comprovante" element={<ComprovantePage />} />
       <Route element={<Layout />}>
         <Route path="/pedidos" element={<PedidosPage />} />
         {podeCriar && <Route path="/pedidos/novo" element={<NovoPedidoPage />} />}
@@ -42,6 +46,8 @@ export function App() {
         <Route path="/fila" element={<FilaPage />} />
         {podeCriar && (
           <>
+            <Route path="/faturamento" element={<FaturamentoPage />} />
+            <Route path="/relatorios" element={<RelatoriosPage />} />
             <Route path="/cadastros/clientes" element={<ClientesPage />} />
             <Route path="/cadastros/materiais" element={<MateriaisPage />} />
             <Route path="/cadastros/servicos" element={<ServicosPage />} />
