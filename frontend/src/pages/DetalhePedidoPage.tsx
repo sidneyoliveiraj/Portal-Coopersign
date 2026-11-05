@@ -81,6 +81,7 @@ export function DetalhePedidoPage() {
     (usuario?.perfil === "ADMINISTRADOR" || usuario?.perfil === "GESTOR") && pedido.status !== "FATURADO";
   const servicos = pedido.pedidoServicos ?? [];
   const ajustes = pedido.ajustesValor ?? [];
+  const retrabalhos = pedido.retrabalhos ?? [];
 
   return (
     <>
@@ -135,6 +136,26 @@ export function DetalhePedidoPage() {
                         <Table.Td>{s.servicoAdicional.descricao}</Table.Td>
                         <Table.Td>{s.quantidade} ×</Table.Td>
                         <Table.Td ta="right">{formatarMoeda(Number(s.valorUnitario) * s.quantidade)}</Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Paper>
+            )}
+
+            {retrabalhos.length > 0 && (
+              <Paper withBorder p="md">
+                <Text fw={600} mb="xs">
+                  Retrabalhos
+                </Text>
+                <Table>
+                  <Table.Tbody>
+                    {retrabalhos.map((r) => (
+                      <Table.Tr key={r.id}>
+                        <Table.Td>{formatarData(r.criadoEm)}</Table.Td>
+                        <Table.Td>{r.motivo}</Table.Td>
+                        <Table.Td>{r.garantia ? "Garantia" : "Produção"}</Table.Td>
+                        <Table.Td ta="right">{formatarMoeda(r.custoOperacional)}</Table.Td>
                       </Table.Tr>
                     ))}
                   </Table.Tbody>

@@ -33,6 +33,7 @@ export function Layout() {
         <NavLink component={RouterLink} to="/pedidos" label="Pedidos" end />
         {podeCriar && <NavLink component={RouterLink} to="/pedidos/novo" label="Novo pedido" />}
         <NavLink component={RouterLink} to="/validacao" label="Validação técnica" />
+        <NavLink component={RouterLink} to="/fila" label="Fila de produção" />
       </AppShell.Navbar>
 
       <AppShell.Main>

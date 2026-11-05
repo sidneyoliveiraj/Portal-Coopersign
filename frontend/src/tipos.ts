@@ -8,6 +8,14 @@ export type Maquina = { id: string; nome: string; tipo: string; status: string }
 
 export type AjusteValor = { id: string; descricao: string; valor: string; criadoEm: string };
 
+export type Retrabalho = {
+  id: string;
+  motivo: string;
+  custoOperacional: string;
+  garantia: boolean;
+  criadoEm: string;
+};
+
 export type Pedido = {
   id: string;
   status: string;
@@ -34,4 +42,5 @@ export type Pedido = {
     servicoAdicional: ServicoAdicional;
   }[];
   ajustesValor?: AjusteValor[];
+  retrabalhos?: Retrabalho[];
 };

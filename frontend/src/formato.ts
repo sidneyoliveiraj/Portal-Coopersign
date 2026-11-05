@@ -19,6 +19,7 @@ export const STATUS_PEDIDO: Record<string, { rotulo: string; cor: string }> = {
   NA_FILA: { rotulo: "Na fila", cor: "indigo" },
   EM_PRODUCAO: { rotulo: "Em produção", cor: "blue" },
   CONCLUIDO: { rotulo: "Concluído", cor: "green" },
+  RETRABALHO: { rotulo: "Retrabalho", cor: "orange" },
   FATURADO: { rotulo: "Faturado", cor: "teal" },
   REJEITADO: { rotulo: "Rejeitado", cor: "red" },
 };

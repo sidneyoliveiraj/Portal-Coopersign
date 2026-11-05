@@ -7,6 +7,7 @@ import { PedidosPage } from "./pages/PedidosPage";
 import { NovoPedidoPage } from "./pages/NovoPedidoPage";
 import { DetalhePedidoPage } from "./pages/DetalhePedidoPage";
 import { ValidacaoPage } from "./pages/ValidacaoPage";
+import { FilaPage } from "./pages/FilaPage";
 
 export function App() {
   const { usuario, carregando } = useAuth();
@@ -37,6 +38,7 @@ export function App() {
         {podeCriar && <Route path="/pedidos/novo" element={<NovoPedidoPage />} />}
         <Route path="/pedidos/:id" element={<DetalhePedidoPage />} />
         <Route path="/validacao" element={<ValidacaoPage />} />
+        <Route path="/fila" element={<FilaPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/pedidos" replace />} />
     </Routes>
