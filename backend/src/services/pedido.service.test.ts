@@ -9,6 +9,7 @@ function criarPrismaFalso() {
     servicoAdicional: {
       findUnique: vi.fn().mockResolvedValue({ id: "srv-1", valorPadrao: "12.00" }),
     },
+    maquina: { findUnique: vi.fn().mockResolvedValue({ id: "maq-1", status: "ATIVA" }) },
     pedido: {
       create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ id: "ped-1", ...data })),
       findUnique: vi.fn(),
@@ -88,6 +89,91 @@ describe("pedidoService.criar", () => {
 
     await expect(service.criar({ ...pedidoValido, formaPagamento: "PIX" })).rejects.toThrow(
       PedidoInvalidoError,
+    );
+  });
+});
+
+describe("pedidoService validacao tecnica", () => {
+  let prisma: ReturnType<typeof criarPrismaFalso>;
+
+  beforeEach(() => {
+    prisma = criarPrismaFalso();
+    prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "AGUARDANDO_VALIDACAO" });
+  });
+
+  it("aprova e envia para a fila da maquina (RF13, RN01)", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    await service.aprovar("ped-1", { maquinaId: "maq-1", observacaoTecnica: "  sangria ok  " });
+
+    expect(prisma.pedido.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ped-1" },
+        data: {
+          status: "NA_FILA",
+          maquinaId: "maq-1",
+          observacaoTecnica: "sangria ok",
+          motivoRejeicao: null,
+        },
+      }),
+    );
+  });
+
+  it("exige maquina para aprovar", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.aprovar("ped-1", {})).rejects.toThrow("maquinaId e obrigatorio");
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("nao envia para maquina em manutencao (RN12)", async () => {
+    prisma.maquina.findUnique.mockResolvedValue({ id: "maq-1", status: "EM_MANUTENCAO" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.aprovar("ped-1", { maquinaId: "maq-1" })).rejects.toThrow(
+      "maquina em manutencao ou inativa nao recebe pedidos",
+    );
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("rejeita maquina de outra organizacao", async () => {
+    prisma.maquina.findUnique.mockResolvedValue(null);
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.aprovar("ped-1", { maquinaId: "maq-x" })).rejects.toThrow(
+      "maquina nao encontrada",
+    );
+  });
+
+  it("nao aprova pedido que nao esta aguardando validacao", async () => {
+    prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "REJEITADO" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.aprovar("ped-1", { maquinaId: "maq-1" })).rejects.toThrow(
+      "pedido nao esta aguardando validacao",
+    );
+  });
+
+  it("exige justificativa para rejeitar (RF14)", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.rejeitar("ped-1", { justificativa: "   " })).rejects.toThrow(
+      "justificativa e obrigatorio",
+    );
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("rejeita guardando a justificativa", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    await service.rejeitar("ped-1", { justificativa: "arquivo em baixa resolucao" });
+
+    expect(prisma.pedido.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          status: "REJEITADO",
+          motivoRejeicao: "arquivo em baixa resolucao",
+          observacaoTecnica: null,
+        },
+      }),
     );
   });
 });

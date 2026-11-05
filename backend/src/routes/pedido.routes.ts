@@ -4,6 +4,9 @@ import {
   listarPedidosController,
   buscarPedidoController,
   ajustarValorPedidoController,
+  listarPendentesValidacaoController,
+  aprovarPedidoController,
+  rejeitarPedidoController,
 } from "../controllers/pedido.controller";
 import { autenticar } from "../middlewares/auth.middleware";
 import { autorizar } from "../middlewares/autorizar.middleware";
@@ -18,6 +21,27 @@ pedidoRouter.get(
   autorizar("ADMINISTRADOR", "GESTOR", "OPERADOR"),
   injetarTenant,
   listarPedidosController,
+);
+
+pedidoRouter.get(
+  "/validacao",
+  autorizar("ADMINISTRADOR", "GESTOR", "OPERADOR"),
+  injetarTenant,
+  listarPendentesValidacaoController,
+);
+
+pedidoRouter.post(
+  "/:id/aprovar",
+  autorizar("ADMINISTRADOR", "GESTOR", "OPERADOR"),
+  injetarTenant,
+  aprovarPedidoController,
+);
+
+pedidoRouter.post(
+  "/:id/rejeitar",
+  autorizar("ADMINISTRADOR", "GESTOR", "OPERADOR"),
+  injetarTenant,
+  rejeitarPedidoController,
 );
 
 pedidoRouter.get(

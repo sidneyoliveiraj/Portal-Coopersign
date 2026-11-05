@@ -3,6 +3,7 @@ import { pedidoRepository } from "../repositories/pedido.repository";
 import { clienteRepository } from "../repositories/cliente.repository";
 import { materialRepository } from "../repositories/material.repository";
 import { servicoAdicionalRepository } from "../repositories/servico-adicional.repository";
+import { maquinaRepository } from "../repositories/maquina.repository";
 import {
   calcularMetragem,
   calcularValorBase,
@@ -36,6 +37,10 @@ function texto(valor: unknown, campo: string): string {
     throw new PedidoInvalidoError(`${campo} e obrigatorio`);
   }
   return valor.trim();
+}
+
+function textoOpcional(valor: unknown): string | null {
+  return typeof valor === "string" && valor.trim().length > 0 ? valor.trim() : null;
 }
 
 function numero(valor: unknown, campo: string): number {
@@ -87,6 +92,7 @@ export function pedidoService(prisma: PrismaTenantClient) {
   const clientes = clienteRepository(prisma);
   const materiais = materialRepository(prisma);
   const servicosAdicionais = servicoAdicionalRepository(prisma);
+  const maquinas = maquinaRepository(prisma);
 
   async function criar(dados: Record<string, unknown>) {
     const clienteId = texto(dados.clienteId, "clienteId");
@@ -192,5 +198,38 @@ export function pedidoService(prisma: PrismaTenantClient) {
     return buscarPorId(id);
   }
 
-  return { criar, listar, buscarPorId, ajustarValor };
+  function listarPendentesValidacao() {
+    return repository.listarPendentesValidacao();
+  }
+
+  async function buscarPendenteValidacao(id: string) {
+    const pedido = await buscarPorId(id);
+    if (pedido.status !== "AGUARDANDO_VALIDACAO") {
+      throw new PedidoInvalidoError("pedido nao esta aguardando validacao");
+    }
+    return pedido;
+  }
+
+  async function aprovar(id: string, dados: Record<string, unknown>) {
+    const maquinaId = texto(dados.maquinaId, "maquinaId");
+    await buscarPendenteValidacao(id);
+
+    const maquina = await maquinas.buscarPorId(maquinaId);
+    if (!maquina) {
+      throw new PedidoInvalidoError("maquina nao encontrada");
+    }
+    if (maquina.status !== "ATIVA") {
+      throw new PedidoInvalidoError("maquina em manutencao ou inativa nao recebe pedidos");
+    }
+
+    return repository.aprovar(id, maquinaId, textoOpcional(dados.observacaoTecnica));
+  }
+
+  async function rejeitar(id: string, dados: Record<string, unknown>) {
+    const justificativa = texto(dados.justificativa, "justificativa");
+    await buscarPendenteValidacao(id);
+    return repository.rejeitar(id, justificativa, textoOpcional(dados.observacaoTecnica));
+  }
+
+  return { criar, listar, buscarPorId, ajustarValor, listarPendentesValidacao, aprovar, rejeitar };
 }

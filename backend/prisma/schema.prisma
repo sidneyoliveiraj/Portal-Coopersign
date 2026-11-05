@@ -117,6 +117,7 @@ model ServicoAdicional {
 enum StatusPedido {
   RASCUNHO
   AGUARDANDO_VALIDACAO
+  NA_FILA
   EM_PRODUCAO
   CONCLUIDO
   FATURADO
@@ -145,8 +146,10 @@ model Pedido {
   metragemTotal  Decimal        @map("metragem_total") @db.Decimal(10, 2)
   valorBase      Decimal        @map("valor_base") @db.Decimal(10, 2)
   valorTotal     Decimal        @map("valor_total") @db.Decimal(10, 2)
+  observacaoTecnica String?     @map("observacao_tecnica")
+  motivoRejeicao String?        @map("motivo_rejeicao")
   criadoEm       DateTime       @default(now()) @map("criado_em")
-  atualizadoEm   DateTime       @updatedAt @map("atualizado_em")
+  atualizadoEm  DateTime       @updatedAt @map("atualizado_em")
 
   organizacao      Organizacao        @relation(fields: [organizacaoId], references: [id])
   cliente          Cliente            @relation(fields: [organizacaoId, clienteId], references: [organizacaoId, id])
