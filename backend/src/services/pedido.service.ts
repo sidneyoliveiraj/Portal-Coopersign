@@ -100,7 +100,7 @@ export function pedidoService(prisma: PrismaTenantClient) {
     const largura = numero(dados.largura, "largura");
     const altura = numero(dados.altura, "altura");
     const quantidade = numero(dados.quantidade, "quantidade");
-    const acabamento = texto(dados.acabamento, "acabamento");
+    const acabamento = textoOpcional(dados.acabamento) ?? "Sem acabamento";
     const arquivoUrl = texto(dados.arquivoUrl, "arquivoUrl");
     const prazoEntrega = data(dados.prazoEntrega, "prazoEntrega");
     const pagamento = formaPagamento(dados.formaPagamento);

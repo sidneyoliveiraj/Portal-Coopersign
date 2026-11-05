@@ -147,7 +147,8 @@ export function NovoPedidoPage() {
 
             <Group grow>
               <NumberInput
-                label="Largura (m)"
+                label="Largura (em metros)"
+                placeholder="Ex: 1,27"
                 required
                 min={0}
                 decimalScale={2}
@@ -156,7 +157,8 @@ export function NovoPedidoPage() {
                 onChange={setLargura}
               />
               <NumberInput
-                label="Altura (m)"
+                label="Altura (em metros)"
+                placeholder="Ex: 2,20"
                 required
                 min={0}
                 decimalScale={2}
@@ -176,8 +178,7 @@ export function NovoPedidoPage() {
 
             <TextInput
               label="Acabamento"
-              placeholder="Ex: ilhós a cada 50 cm, bainha"
-              required
+              placeholder="Ex: bainha. Em branco, fica sem acabamento"
               value={acabamento}
               onChange={(e) => setAcabamento(e.currentTarget.value)}
             />

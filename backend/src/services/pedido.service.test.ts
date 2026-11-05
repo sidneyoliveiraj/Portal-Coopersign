@@ -64,10 +64,17 @@ describe("pedidoService.criar", () => {
 
   it("rejeita pedido sem campo obrigatorio", async () => {
     const service = pedidoService(prisma as unknown as PrismaTenantClient);
-    const { acabamento, ...semAcabamento } = pedidoValido;
+    const { arquivoUrl, ...semArquivo } = pedidoValido;
 
-    await expect(service.criar(semAcabamento)).rejects.toThrow(PedidoInvalidoError);
+    await expect(service.criar(semArquivo)).rejects.toThrow(PedidoInvalidoError);
     expect(prisma.pedido.create).not.toHaveBeenCalled();
+  });
+
+  it("registra 'Sem acabamento' quando o campo fica em branco", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar({ ...pedidoValido, acabamento: "  " });
+
+    expect(pedido.acabamento).toBe("Sem acabamento");
   });
 
   it("rejeita dimensao invalida antes de consultar o banco", async () => {
