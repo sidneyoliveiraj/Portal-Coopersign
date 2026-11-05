@@ -9,6 +9,7 @@ const detalhesPedido = {
   maquina: true,
   pedidoServicos: { include: { servicoAdicional: true } },
   ajustesValor: { orderBy: { criadoEm: "asc" } },
+  retrabalhos: { orderBy: { criadoEm: "asc" } },
 } satisfies Prisma.PedidoInclude;
 
 export function pedidoRepository(prisma: PrismaTenantClient) {
