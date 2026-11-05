@@ -19,7 +19,7 @@ import {
 import { api } from "../api";
 import { useAuth } from "../auth";
 import type { Maquina, Pedido } from "../tipos";
-import { formatarArea, formatarData, STATUS_PEDIDO } from "../formato";
+import { formatarArea, formatarData, formatarMedidas, formatarMoeda, STATUS_PEDIDO } from "../formato";
 
 type RetrabalhoAberto = { pedido: Pedido; garantia: boolean };
 
@@ -66,14 +66,22 @@ function FormRetrabalho({
           <TextInput label="Motivo" required value={motivo} onChange={(e) => setMotivo(e.currentTarget.value)} />
           <NumberInput
             label="Custo operacional (R$)"
-            required
+            description={alvo.garantia ? undefined : "Deixe em branco se não souber o custo."}
+            required={alvo.garantia}
             min={0}
             decimalScale={2}
             decimalSeparator=","
             value={custoOperacional}
             onChange={setCustoOperacional}
           />
-          <Group justify="flex-end">
+          <Group justify="space-between">
+            <Button
+              type="button"
+              variant="default"
+              onClick={() => setCustoOperacional(Number(alvo.pedido.valorBase))}
+            >
+              Valor cheio ({formatarMoeda(alvo.pedido.valorBase)})
+            </Button>
             <Button type="submit" loading={salvando}>
               Registrar
             </Button>
@@ -81,6 +89,51 @@ function FormRetrabalho({
         </Stack>
       </form>
     </Modal>
+  );
+}
+
+function CampoPosicao({
+  posicao,
+  total,
+  aoMover,
+}: {
+  posicao: number;
+  total: number;
+  aoMover: (posicao: number) => void;
+}) {
+  const [valor, setValor] = useState(String(posicao));
+
+  useEffect(() => {
+    setValor(String(posicao));
+  }, [posicao]);
+
+  function confirmar() {
+    const destino = Math.min(Number(valor), total);
+    if (destino >= 1 && destino !== posicao) {
+      aoMover(destino);
+    }
+  }
+
+  return (
+    <TextInput
+      size="xs"
+      w={52}
+      inputMode="numeric"
+      aria-label="Posição na fila"
+      value={valor}
+      onChange={(e) => setValor(e.currentTarget.value.replace(/\D/g, ""))}
+      onFocus={(e) => e.currentTarget.select()}
+      onBlur={() => setValor(String(posicao))}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          confirmar();
+          e.currentTarget.blur();
+        }
+        if (e.key === "Escape") {
+          e.currentTarget.blur();
+        }
+      }}
+    />
   );
 }
 
@@ -167,6 +220,7 @@ export function FilaPage() {
               <Table.Th>#</Table.Th>
               <Table.Th>Cliente</Table.Th>
               <Table.Th>Material</Table.Th>
+              <Table.Th>Medidas</Table.Th>
               <Table.Th ta="right">Metragem</Table.Th>
               <Table.Th>Prazo</Table.Th>
               <Table.Th>Status</Table.Th>
@@ -178,13 +232,24 @@ export function FilaPage() {
               const status = STATUS_PEDIDO[pedido.status];
               return (
                 <Table.Tr key={pedido.id}>
-                  <Table.Td>{indice + 1}</Table.Td>
+                  <Table.Td>
+                    {podeMover ? (
+                      <CampoPosicao
+                        posicao={indice + 1}
+                        total={fila.length}
+                        aoMover={(posicao) => executar(`/fila/pedidos/${pedido.id}/mover`, { posicao })}
+                      />
+                    ) : (
+                      indice + 1
+                    )}
+                  </Table.Td>
                   <Table.Td>
                     <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
                       {pedido.cliente.nome}
                     </Anchor>
                   </Table.Td>
                   <Table.Td>{pedido.material.tipo}</Table.Td>
+                  <Table.Td>{formatarMedidas(pedido)}</Table.Td>
                   <Table.Td ta="right">{formatarArea(pedido.metragemTotal)}</Table.Td>
                   <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
                   <Table.Td>
@@ -210,26 +275,6 @@ export function FilaPage() {
                             onClick={() => setRetrabalho({ pedido, garantia: false })}
                           >
                             Retrabalho
-                          </Button>
-                        </>
-                      )}
-                      {podeMover && (
-                        <>
-                          <Button
-                            size="xs"
-                            variant="default"
-                            disabled={indice === 0}
-                            onClick={() => executar(`/fila/pedidos/${pedido.id}/mover`, { direcao: "subir" })}
-                          >
-                            Subir
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="default"
-                            disabled={indice === fila.length - 1}
-                            onClick={() => executar(`/fila/pedidos/${pedido.id}/mover`, { direcao: "descer" })}
-                          >
-                            Descer
                           </Button>
                         </>
                       )}

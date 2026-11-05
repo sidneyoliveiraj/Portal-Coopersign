@@ -101,6 +101,24 @@ describe("filaService", () => {
       ).rejects.toThrow("custoOperacional deve ser um numero maior ou igual a zero");
     });
 
+    it.each([undefined, null, ""])("aceita retrabalho de producao sem custo (%s)", async (custoOperacional) => {
+      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "EM_PRODUCAO" });
+      await service.registrarRetrabalho("ped-1", { motivo: "bateu a cabeca", custoOperacional });
+
+      expect(prisma.retrabalho.create).toHaveBeenCalledWith({
+        data: { pedidoId: "ped-1", motivo: "bateu a cabeca", custoOperacional: null, garantia: false },
+      });
+    });
+
+    it("exige custo no retrabalho de garantia (RN06)", async () => {
+      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "CONCLUIDO" });
+
+      await expect(service.registrarRetrabalho("ped-1", { motivo: "descolou", garantia: true })).rejects.toThrow(
+        "custoOperacional e obrigatorio em retrabalho de garantia",
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
     it("registra retrabalho de producao e volta o pedido para a fila", async () => {
       prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "EM_PRODUCAO" });
       await service.registrarRetrabalho("ped-1", { motivo: "cor errada", custoOperacional: 25.5 });
@@ -141,20 +159,47 @@ describe("filaService", () => {
       prisma.pedido.findMany.mockResolvedValue([{ id: "ped-0" }, { id: "ped-1" }, { id: "ped-2" }]);
     });
 
-    it("troca o pedido de lugar e grava a nova ordem (RF23)", async () => {
-      await service.mover("ped-1", { direcao: "subir" });
+    function ordemGravada() {
+      return prisma.pedido.update.mock.calls.map(([args]) => [args.where.id, args.data.posicaoFila]);
+    }
 
-      expect(prisma.pedido.update.mock.calls.map(([args]) => [args.where.id, args.data.posicaoFila])).toEqual([
-        ["ped-1", 0],
+    it("leva o ultimo pedido direto para a primeira posicao (RF23)", async () => {
+      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-2", status: "NA_FILA", maquinaId: "maq-1" });
+
+      await service.mover("ped-2", { posicao: 1 });
+
+      expect(ordemGravada()).toEqual([
+        ["ped-2", 0],
         ["ped-0", 1],
-        ["ped-2", 2],
+        ["ped-1", 2],
       ]);
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
 
-    it("nao faz nada ao descer o ultimo da fila", async () => {
-      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-2", status: "NA_FILA", maquinaId: "maq-1" });
-      await service.mover("ped-2", { direcao: "descer" });
+    it("leva o primeiro pedido para o meio da fila", async () => {
+      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-0", status: "NA_FILA", maquinaId: "maq-1" });
+
+      await service.mover("ped-0", { posicao: 2 });
+
+      expect(ordemGravada()).toEqual([
+        ["ped-1", 0],
+        ["ped-0", 1],
+        ["ped-2", 2],
+      ]);
+    });
+
+    it("posicao maior que a fila leva o pedido para o fim", async () => {
+      await service.mover("ped-1", { posicao: 99 });
+
+      expect(ordemGravada()).toEqual([
+        ["ped-0", 0],
+        ["ped-2", 1],
+        ["ped-1", 2],
+      ]);
+    });
+
+    it("nao faz nada se o pedido ja esta na posicao", async () => {
+      await service.mover("ped-1", { posicao: 2 });
 
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
@@ -162,11 +207,11 @@ describe("filaService", () => {
     it("rejeita pedido que nao esta na fila", async () => {
       prisma.pedido.findUnique.mockResolvedValue({ id: "ped-9", status: "CONCLUIDO", maquinaId: "maq-1" });
 
-      await expect(service.mover("ped-9", { direcao: "subir" })).rejects.toThrow("pedido nao esta em uma fila");
+      await expect(service.mover("ped-9", { posicao: 1 })).rejects.toThrow("pedido nao esta em uma fila");
     });
 
-    it("rejeita direcao invalida", async () => {
-      await expect(service.mover("ped-1", { direcao: "lado" })).rejects.toThrow("direcao deve ser subir ou descer");
+    it.each([0, -1, 1.5, "1", undefined])("rejeita posicao invalida: %s", async (posicao) => {
+      await expect(service.mover("ped-1", { posicao })).rejects.toThrow("posicao deve ser um numero inteiro");
     });
   });
 });

@@ -9,6 +9,11 @@ export function formatarArea(valor: number | string) {
   return `${area.format(Number(valor))} m²`;
 }
 
+export function formatarMedidas(pedido: { largura: string; altura: string; quantidade: number }) {
+  const unidades = pedido.quantidade === 1 ? "1 unidade" : `${pedido.quantidade} unidades`;
+  return `${area.format(Number(pedido.largura))} × ${area.format(Number(pedido.altura))} m (${unidades})`;
+}
+
 export function formatarData(valor: string) {
   return new Date(valor).toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }

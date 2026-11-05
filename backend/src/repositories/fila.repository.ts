@@ -7,7 +7,7 @@ export type StatusFila = "EM_PRODUCAO" | "CONCLUIDO";
 export type RetrabalhoInput = {
   pedidoId: string;
   motivo: string;
-  custoOperacional: number;
+  custoOperacional: number | null;
   garantia: boolean;
 };
 

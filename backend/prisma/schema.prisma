@@ -181,8 +181,8 @@ model Retrabalho {
   id               String   @id @default(uuid())
   pedidoId         String   @map("pedido_id")
   motivo           String
-  custoOperacional Decimal  @map("custo_operacional") @db.Decimal(10, 2)
-  garantia         Boolean  @default(false)
+  custoOperacional Decimal? @map("custo_operacional") @db.Decimal(10, 2)
+  garantia        Boolean  @default(false)
   criadoEm         DateTime @default(now()) @map("criado_em")
 
   pedido Pedido @relation(fields: [pedidoId], references: [id])

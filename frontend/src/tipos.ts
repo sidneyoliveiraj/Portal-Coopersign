@@ -11,7 +11,7 @@ export type AjusteValor = { id: string; descricao: string; valor: string; criado
 export type Retrabalho = {
   id: string;
   motivo: string;
-  custoOperacional: string;
+  custoOperacional: string | null;
   garantia: boolean;
   criadoEm: string;
 };

@@ -155,7 +155,9 @@ export function DetalhePedidoPage() {
                         <Table.Td>{formatarData(r.criadoEm)}</Table.Td>
                         <Table.Td>{r.motivo}</Table.Td>
                         <Table.Td>{r.garantia ? "Garantia" : "Produção"}</Table.Td>
-                        <Table.Td ta="right">{formatarMoeda(r.custoOperacional)}</Table.Td>
+                        <Table.Td ta="right">
+                          {r.custoOperacional === null ? "Custo não informado" : formatarMoeda(r.custoOperacional)}
+                        </Table.Td>
                       </Table.Tr>
                     ))}
                   </Table.Tbody>

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Alert, Anchor, Button, Group, Loader, Paper, Select, Stack, Text, TextInput, Textarea, Title } from "@mantine/core";
 import { api } from "../api";
 import type { Maquina, Pedido } from "../tipos";
-import { formatarArea, formatarData } from "../formato";
+import { formatarArea, formatarData, formatarMedidas } from "../formato";
 
 function CartaoValidacao({
   pedido,
@@ -43,7 +43,7 @@ function CartaoValidacao({
         </Text>
       </Group>
       <Text size="sm" mb="sm">
-        {pedido.material.tipo} · {formatarArea(pedido.metragemTotal)} · {pedido.acabamento} ·{" "}
+        {pedido.material.tipo} · {formatarMedidas(pedido)} · {formatarArea(pedido.metragemTotal)} · {pedido.acabamento} ·{" "}
         <Anchor href={pedido.arquivoUrl} target="_blank" rel="noreferrer" size="sm">
           Abrir arquivo
         </Anchor>

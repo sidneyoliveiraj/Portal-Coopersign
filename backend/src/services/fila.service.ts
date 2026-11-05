@@ -56,12 +56,18 @@ export function filaService(prisma: PrismaTenantClient) {
       throw new PedidoInvalidoError("motivo e obrigatorio");
     }
 
-    const custoOperacional = dados.custoOperacional === "" ? NaN : Number(dados.custoOperacional);
-    if (!Number.isFinite(custoOperacional) || custoOperacional < 0) {
+    const garantia = dados.garantia === true;
+    const custoInformado = dados.custoOperacional;
+    const semCusto = custoInformado === undefined || custoInformado === null || custoInformado === "";
+    if (semCusto && garantia) {
+      throw new PedidoInvalidoError("custoOperacional e obrigatorio em retrabalho de garantia");
+    }
+
+    const custoOperacional = semCusto ? null : Number(custoInformado);
+    if (custoOperacional !== null && (!Number.isFinite(custoOperacional) || custoOperacional < 0)) {
       throw new PedidoInvalidoError("custoOperacional deve ser um numero maior ou igual a zero");
     }
 
-    const garantia = dados.garantia === true;
     const pedido = await buscarPedido(id);
     const origensPermitidas = garantia ? ["CONCLUIDO"] : ["EM_PRODUCAO", "CONCLUIDO"];
     if (!origensPermitidas.includes(pedido.status)) {
@@ -73,9 +79,9 @@ export function filaService(prisma: PrismaTenantClient) {
   }
 
   async function mover(id: string, dados: Record<string, unknown>) {
-    const direcao = dados.direcao;
-    if (direcao !== "subir" && direcao !== "descer") {
-      throw new PedidoInvalidoError("direcao deve ser subir ou descer");
+    const posicao = dados.posicao;
+    if (typeof posicao !== "number" || !Number.isInteger(posicao) || posicao < 1) {
+      throw new PedidoInvalidoError("posicao deve ser um numero inteiro maior ou igual a 1");
     }
 
     const pedido = await buscarPedido(id);
@@ -89,12 +95,13 @@ export function filaService(prisma: PrismaTenantClient) {
       throw new PedidoInvalidoError("pedido nao esta em uma fila");
     }
 
-    const destino = direcao === "subir" ? atual - 1 : atual + 1;
-    if (destino < 0 || destino >= ids.length) {
+    const destino = Math.min(posicao, ids.length) - 1;
+    if (destino === atual) {
       return buscarPedido(id);
     }
 
-    [ids[atual], ids[destino]] = [ids[destino], ids[atual]];
+    ids.splice(atual, 1);
+    ids.splice(destino, 0, id);
     await repository.definirOrdem(ids);
     return buscarPedido(id);
   }
