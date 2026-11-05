@@ -63,6 +63,19 @@ async function main() {
     });
   }
 
+  await prisma.usuario.upsert({
+    where: { organizacaoId_email: { organizacaoId: organizacao.id, email: "cliente@coopersign.dev" } },
+    update: {},
+    create: {
+      organizacaoId: organizacao.id,
+      nome: "Padaria Pão Dourado",
+      email: "cliente@coopersign.dev",
+      senhaHash,
+      perfil: "CLIENTE",
+      clienteId: "cli-dev-1",
+    },
+  });
+
   const materiais = [
     { tipo: "Lona 440g", precoM2: 45.5 },
     { tipo: "Adesivo vinil branco", precoM2: 38 },

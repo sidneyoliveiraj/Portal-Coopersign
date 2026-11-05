@@ -24,6 +24,29 @@ export async function listarUsuariosController(req: Request, res: Response) {
   return res.status(200).json({ usuarios });
 }
 
+export async function listarContasClientesController(req: Request, res: Response) {
+  const usuarios = await usuarioService(req.prisma!).listarContasClientes();
+  return res.status(200).json({ usuarios });
+}
+
+export async function criarContaClienteController(req: Request, res: Response) {
+  try {
+    const usuario = await usuarioService(req.prisma!).criarContaCliente(req.body ?? {});
+    return res.status(201).json({ usuario });
+  } catch (erro) {
+    return responderErro(erro, res);
+  }
+}
+
+export async function aprovarClienteController(req: Request, res: Response) {
+  try {
+    const usuario = await usuarioService(req.prisma!).aprovarCliente(req.params.id as string);
+    return res.status(200).json({ usuario });
+  } catch (erro) {
+    return responderErro(erro, res);
+  }
+}
+
 export async function criarUsuarioController(req: Request, res: Response) {
   try {
     const usuario = await usuarioService(req.prisma!).criar(req.body ?? {}, req.usuario!);

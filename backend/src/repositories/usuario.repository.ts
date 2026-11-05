@@ -9,7 +9,19 @@ const dadosPublicos = { id: true, nome: true, email: true, perfil: true, ativo: 
 export function usuarioRepository(prisma: PrismaTenantClient) {
   return {
     listar() {
-      return prisma.usuario.findMany({ select: dadosPublicos, orderBy: { nome: "asc" } });
+      return prisma.usuario.findMany({
+        where: { perfil: { not: "CLIENTE" } },
+        select: dadosPublicos,
+        orderBy: { nome: "asc" },
+      });
+    },
+
+    listarContasClientes() {
+      return prisma.usuario.findMany({
+        where: { perfil: "CLIENTE" },
+        select: { ...dadosPublicos, cliente: { select: { nome: true } } },
+        orderBy: [{ ativo: "asc" }, { nome: "asc" }],
+      });
     },
 
     buscarPorId(id: string) {

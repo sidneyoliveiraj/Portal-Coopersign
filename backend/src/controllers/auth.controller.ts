@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { compararSenha, gerarToken } from "../services/auth.service";
+import { cadastrarCliente, CadastroInvalidoError } from "../services/cadastro-cliente.service";
 
 export async function loginController(req: Request, res: Response) {
   const { email, senha, organizacaoId } = req.body;
@@ -10,18 +11,27 @@ export async function loginController(req: Request, res: Response) {
   }
 
   const candidatos = await prisma.usuario.findMany({
-    where: { email, ativo: true, ...(organizacaoId ? { organizacaoId } : {}) },
+    where: { email, ...(organizacaoId ? { organizacaoId } : {}) },
   });
 
-  const autenticados = [];
+  const comSenhaCorreta = [];
   for (const candidato of candidatos) {
     if (await compararSenha(senha, candidato.senhaHash)) {
-      autenticados.push(candidato);
+      comSenhaCorreta.push(candidato);
     }
   }
 
-  if (autenticados.length === 0) {
+  if (comSenhaCorreta.length === 0) {
     return res.status(401).json({ erro: "credenciais invalidas" });
+  }
+
+  const autenticados = comSenhaCorreta.filter((candidato) => candidato.ativo);
+
+  if (autenticados.length === 0) {
+    const aguardandoAprovacao = comSenhaCorreta.some((candidato) => candidato.perfil === "CLIENTE");
+    return res.status(403).json({
+      erro: aguardandoAprovacao ? "cadastro inativo ou aguardando aprovacao do gestor" : "usuario inativo",
+    });
   }
 
   if (autenticados.length > 1) {
@@ -39,6 +49,18 @@ export async function loginController(req: Request, res: Response) {
   });
 
   return res.status(200).json({ token });
+}
+
+export async function cadastroClienteController(req: Request, res: Response) {
+  try {
+    await cadastrarCliente(req.body ?? {});
+    return res.status(201).json({ mensagem: "cadastro recebido, aguardando aprovacao do gestor" });
+  } catch (erro) {
+    if (erro instanceof CadastroInvalidoError) {
+      return res.status(400).json({ erro: erro.message });
+    }
+    throw erro;
+  }
 }
 
 export function meController(req: Request, res: Response) {

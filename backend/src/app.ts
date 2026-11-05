@@ -10,6 +10,7 @@ import { servicoAdicionalRouter } from "./routes/servico-adicional.routes";
 import { pedidoRouter } from "./routes/pedido.routes";
 import { filaRouter } from "./routes/fila.routes";
 import { faturamentoRouter } from "./routes/faturamento.routes";
+import { portalRouter } from "./routes/portal.routes";
 
 export const app = express();
 
@@ -31,10 +32,15 @@ app.use("/api/servicos-adicionais", servicoAdicionalRouter);
 app.use("/api/pedidos", pedidoRouter);
 app.use("/api/fila", filaRouter);
 app.use("/api/faturamento", faturamentoRouter);
+app.use("/api/portal", portalRouter);
 
 app.use((erro: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  if ((erro as { code?: string }).code === "P2003") {
-    return res.status(409).json({ erro: "registro em uso por pedidos, nao pode ser removido" });
+  const codigo = (erro as { code?: string }).code;
+  if (codigo === "P2003") {
+    return res.status(409).json({ erro: "registro em uso, nao pode ser removido" });
+  }
+  if (codigo === "P2002") {
+    return res.status(409).json({ erro: "ja existe um registro com estes dados" });
   }
   console.error(erro);
   return res.status(500).json({ erro: "erro interno do servidor" });

@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { usuarioService, UsuarioInvalidoError, UsuarioSemPermissaoError } from "./usuario.service";
+import {
+  usuarioService,
+  UsuarioInvalidoError,
+  UsuarioNaoEncontradoError,
+  UsuarioSemPermissaoError,
+} from "./usuario.service";
 import { PrismaTenantClient } from "../lib/prisma-tenant";
 
 const admin = { usuarioId: "adm-1", perfil: "ADMINISTRADOR" };
@@ -8,6 +13,7 @@ const novoUsuario = { nome: "Ana", email: "ana@coopersign.dev", senha: "senha123
 
 function criarPrismaFalso() {
   return {
+    cliente: { findUnique: vi.fn().mockResolvedValue({ id: "cli-1", nome: "Padaria" }) },
     usuario: {
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue({ id: "usu-1", perfil: "OPERADOR", ativo: true }),
@@ -68,6 +74,37 @@ describe("usuarioService", () => {
     await expect(service.atualizar("ges-1", { ativo: false }, gestor)).rejects.toThrow(
       "voce nao pode desativar o proprio usuario",
     );
+  });
+
+  it("cria conta de acesso vinculada ao cliente (RF35)", async () => {
+    await service.criarContaCliente({ clienteId: "cli-1", email: "c@x.dev", senha: "senha123" });
+
+    expect(prisma.usuario.create.mock.calls[0][0].data).toMatchObject({
+      nome: "Padaria",
+      perfil: "CLIENTE",
+      clienteId: "cli-1",
+    });
+  });
+
+  it("nao cria conta para cliente de outra organizacao", async () => {
+    prisma.cliente.findUnique.mockResolvedValue(null);
+
+    await expect(service.criarContaCliente({ clienteId: "cli-x", email: "c@x.dev", senha: "senha123" })).rejects.toThrow(
+      "cliente nao encontrado",
+    );
+  });
+
+  it("aprova cadastro de cliente (RF37, RN14)", async () => {
+    prisma.usuario.findUnique.mockResolvedValue({ id: "usu-1", perfil: "CLIENTE", ativo: false });
+
+    await service.aprovarCliente("usu-1");
+
+    expect(prisma.usuario.update.mock.calls[0][0].data).toEqual({ ativo: true });
+  });
+
+  it("nao usa a aprovacao de cliente para ativar usuario interno", async () => {
+    await expect(service.aprovarCliente("usu-1")).rejects.toThrow(UsuarioNaoEncontradoError);
+    expect(prisma.usuario.update).not.toHaveBeenCalled();
   });
 
   it("atualiza apenas nome, perfil e ativo", async () => {

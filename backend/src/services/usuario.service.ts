@@ -1,4 +1,5 @@
 import { PrismaTenantClient } from "../lib/prisma-tenant";
+import { clienteRepository } from "../repositories/cliente.repository";
 import { usuarioRepository, UsuarioAtualizarInput } from "../repositories/usuario.repository";
 import { hashSenha } from "./auth.service";
 
@@ -47,25 +48,49 @@ function perfilValido(valor: unknown, autor: Autor): PerfilInterno {
 
 export function usuarioService(prisma: PrismaTenantClient) {
   const repository = usuarioRepository(prisma);
+  const clientes = clienteRepository(prisma);
 
   function listar() {
     return repository.listar();
   }
 
-  async function criar(dados: Record<string, unknown>, autor: Autor) {
-    const nome = texto(dados.nome, "nome");
+  function listarContasClientes() {
+    return repository.listarContasClientes();
+  }
+
+  async function credenciais(dados: Record<string, unknown>) {
     const email = texto(dados.email, "email");
     const senha = texto(dados.senha, "senha");
     if (senha.length < 6) {
       throw new UsuarioInvalidoError("senha deve ter pelo menos 6 caracteres");
     }
-    const perfil = perfilValido(dados.perfil, autor);
-
     if (await repository.buscarPorEmail(email)) {
       throw new UsuarioInvalidoError("ja existe um usuario com este email");
     }
+    return { email, senhaHash: await hashSenha(senha) };
+  }
 
-    return repository.criar({ nome, email, perfil, senhaHash: await hashSenha(senha) });
+  async function criar(dados: Record<string, unknown>, autor: Autor) {
+    const nome = texto(dados.nome, "nome");
+    const perfil = perfilValido(dados.perfil, autor);
+    return repository.criar({ nome, perfil, ...(await credenciais(dados)) });
+  }
+
+  async function criarContaCliente(dados: Record<string, unknown>) {
+    const clienteId = texto(dados.clienteId, "clienteId");
+    const cliente = await clientes.buscarPorId(clienteId);
+    if (!cliente) {
+      throw new UsuarioInvalidoError("cliente nao encontrado");
+    }
+    return repository.criar({ nome: cliente.nome, perfil: "CLIENTE", clienteId, ...(await credenciais(dados)) });
+  }
+
+  async function aprovarCliente(id: string) {
+    const usuario = await repository.buscarPorId(id);
+    if (!usuario || usuario.perfil !== "CLIENTE") {
+      throw new UsuarioNaoEncontradoError();
+    }
+    return repository.atualizar(id, { ativo: true });
   }
 
   async function atualizar(id: string, dados: Record<string, unknown>, autor: Autor) {
@@ -97,5 +122,5 @@ export function usuarioService(prisma: PrismaTenantClient) {
     return repository.atualizar(id, alteracoes);
   }
 
-  return { listar, criar, atualizar };
+  return { listar, listarContasClientes, criar, criarContaCliente, aprovarCliente, atualizar };
 }
