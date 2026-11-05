@@ -34,6 +34,18 @@ export function Layout() {
         {podeCriar && <NavLink component={RouterLink} to="/pedidos/novo" label="Novo pedido" />}
         <NavLink component={RouterLink} to="/validacao" label="Validação técnica" />
         <NavLink component={RouterLink} to="/fila" label="Fila de produção" />
+        {podeCriar && (
+          <>
+            <Text size="xs" c="dimmed" fw={600} mt="md" mb={4} px="sm">
+              Cadastros
+            </Text>
+            <NavLink component={RouterLink} to="/cadastros/clientes" label="Clientes" />
+            <NavLink component={RouterLink} to="/cadastros/materiais" label="Materiais" />
+            <NavLink component={RouterLink} to="/cadastros/servicos" label="Serviços adicionais" />
+            <NavLink component={RouterLink} to="/cadastros/maquinas" label="Máquinas" />
+            <NavLink component={RouterLink} to="/cadastros/usuarios" label="Usuários" />
+          </>
+        )}
       </AppShell.Navbar>
 
       <AppShell.Main>

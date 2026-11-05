@@ -8,6 +8,7 @@ import { NovoPedidoPage } from "./pages/NovoPedidoPage";
 import { DetalhePedidoPage } from "./pages/DetalhePedidoPage";
 import { ValidacaoPage } from "./pages/ValidacaoPage";
 import { FilaPage } from "./pages/FilaPage";
+import { ClientesPage, MaquinasPage, MateriaisPage, ServicosPage, UsuariosPage } from "./pages/CadastrosPages";
 
 export function App() {
   const { usuario, carregando } = useAuth();
@@ -39,6 +40,15 @@ export function App() {
         <Route path="/pedidos/:id" element={<DetalhePedidoPage />} />
         <Route path="/validacao" element={<ValidacaoPage />} />
         <Route path="/fila" element={<FilaPage />} />
+        {podeCriar && (
+          <>
+            <Route path="/cadastros/clientes" element={<ClientesPage />} />
+            <Route path="/cadastros/materiais" element={<MateriaisPage />} />
+            <Route path="/cadastros/servicos" element={<ServicosPage />} />
+            <Route path="/cadastros/maquinas" element={<MaquinasPage />} />
+            <Route path="/cadastros/usuarios" element={<UsuariosPage />} />
+          </>
+        )}
       </Route>
       <Route path="*" element={<Navigate to="/pedidos" replace />} />
     </Routes>
