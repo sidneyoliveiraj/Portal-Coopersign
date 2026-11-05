@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   Alert,
@@ -18,6 +18,7 @@ import {
   Title,
 } from "@mantine/core";
 import { api } from "../api";
+import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Pedido } from "../tipos";
 import { FORMA_PAGAMENTO, formatarArea, formatarData, formatarMoeda, STATUS_PEDIDO } from "../formato";
@@ -44,11 +45,15 @@ export function DetalhePedidoPage() {
   const [erroAjuste, setErroAjuste] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => {
+  const carregar = useCallback(() => {
     api<{ pedido: Pedido }>(`/pedidos/${id}`)
       .then(({ pedido }) => setPedido(pedido))
       .catch((e) => setErro(e.message));
   }, [id]);
+
+  useAtualizacoesDePedidos(carregar);
+
+  useEffect(carregar, [carregar]);
 
   async function registrarAjuste(evento: FormEvent) {
     evento.preventDefault();

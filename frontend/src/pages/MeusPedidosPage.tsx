@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Badge, Loader, Table, Text, Title } from "@mantine/core";
 import { api } from "../api";
+import { useAtualizacoesDePedidos } from "../tempoReal";
 import type { PedidoDoCliente } from "../tipos";
 import { formatarData, formatarMedidas, formatarMoeda, STATUS_PEDIDO } from "../formato";
 
@@ -49,11 +50,15 @@ export function MeusPedidosPage() {
   const [pedidos, setPedidos] = useState<PedidoDoCliente[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  useEffect(() => {
+  function carregar() {
     api<{ pedidos: PedidoDoCliente[] }>("/portal/pedidos")
       .then(({ pedidos }) => setPedidos(pedidos))
       .catch((e) => setErro(e.message));
-  }, []);
+  }
+
+  useAtualizacoesDePedidos(carregar);
+
+  useEffect(carregar, []);
 
   if (erro) {
     return <Alert color="red">{erro}</Alert>;

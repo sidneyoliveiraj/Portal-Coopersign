@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Alert, Badge, Button, Group, Loader, Table, Text, Title } from "@mantine/core";
 import { api } from "../api";
+import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Pedido } from "../tipos";
 import { formatarArea, formatarData, formatarMoeda, STATUS_PEDIDO } from "../formato";
@@ -12,11 +13,15 @@ export function PedidosPage() {
   const [pedidos, setPedidos] = useState<Pedido[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  useEffect(() => {
+  function carregar() {
     api<{ pedidos: Pedido[] }>("/pedidos")
       .then(({ pedidos }) => setPedidos(pedidos))
       .catch((e) => setErro(e.message));
-  }, []);
+  }
+
+  useAtualizacoesDePedidos(carregar);
+
+  useEffect(carregar, []);
 
   const podeCriar = usuario?.perfil === "ADMINISTRADOR" || usuario?.perfil === "GESTOR";
 

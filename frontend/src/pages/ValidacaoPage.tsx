@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Alert, Anchor, Button, Group, Loader, Paper, Select, Stack, Text, TextInput, Textarea, Title } from "@mantine/core";
 import { api } from "../api";
+import { useAtualizacoesDePedidos } from "../tempoReal";
 import type { Maquina, Pedido } from "../tipos";
 import { formatarArea, formatarData, formatarMedidas } from "../formato";
 
@@ -101,6 +102,8 @@ export function ValidacaoPage() {
       .then(({ pedidos }) => setPedidos(pedidos))
       .catch((e) => setErro(e.message));
   }
+
+  useAtualizacoesDePedidos(carregarPedidos);
 
   useEffect(() => {
     carregarPedidos();

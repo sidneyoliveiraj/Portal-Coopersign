@@ -17,6 +17,7 @@ import {
   Title,
 } from "@mantine/core";
 import { api } from "../api";
+import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Maquina, Pedido } from "../tipos";
 import { formatarArea, formatarData, formatarMedidas, formatarMoeda, STATUS_PEDIDO } from "../formato";
@@ -160,6 +161,8 @@ export function FilaPage() {
       setErro(e instanceof Error ? e.message : "erro ao carregar a fila");
     }
   }, [maquinaId]);
+
+  useAtualizacoesDePedidos(carregarFila);
 
   useEffect(() => {
     api<{ maquinas: Maquina[] }>("/maquinas")
