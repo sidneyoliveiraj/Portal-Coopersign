@@ -9,6 +9,7 @@ import { materialRouter } from "./routes/material.routes";
 import { servicoAdicionalRouter } from "./routes/servico-adicional.routes";
 import { pedidoRouter } from "./routes/pedido.routes";
 import { filaRouter } from "./routes/fila.routes";
+import { faturamentoRouter } from "./routes/faturamento.routes";
 
 export const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/materiais", materialRouter);
 app.use("/api/servicos-adicionais", servicoAdicionalRouter);
 app.use("/api/pedidos", pedidoRouter);
 app.use("/api/fila", filaRouter);
+app.use("/api/faturamento", faturamentoRouter);
 
 app.use((erro: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if ((erro as { code?: string }).code === "P2003") {

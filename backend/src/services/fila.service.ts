@@ -46,7 +46,11 @@ export function filaService(prisma: PrismaTenantClient) {
       throw new PedidoInvalidoError(`pedido em ${pedido.status} nao pode ir para ${status}`);
     }
 
-    await repository.atualizarStatus(id, status);
+    if (status === "CONCLUIDO") {
+      await repository.concluir(id);
+    } else {
+      await repository.iniciarProducao(id, pedido.iniciadoEm ?? new Date());
+    }
     return buscarPedido(id);
   }
 

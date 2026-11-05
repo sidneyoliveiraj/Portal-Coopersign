@@ -30,10 +30,14 @@ export function filaRepository(prisma: PrismaTenantClient) {
       });
     },
 
-    atualizarStatus(id: string, status: StatusFila) {
+    iniciarProducao(id: string, iniciadoEm: Date) {
+      return prisma.pedido.update({ where: { id }, data: { status: "EM_PRODUCAO", iniciadoEm } });
+    },
+
+    concluir(id: string) {
       return prisma.pedido.update({
         where: { id },
-        data: status === "CONCLUIDO" ? { status, posicaoFila: null } : { status },
+        data: { status: "CONCLUIDO", posicaoFila: null, concluidoEm: new Date() },
       });
     },
 

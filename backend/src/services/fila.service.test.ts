@@ -51,7 +51,18 @@ describe("filaService", () => {
 
       expect(prisma.pedido.update).toHaveBeenCalledWith({
         where: { id: "ped-1" },
-        data: { status: "EM_PRODUCAO" },
+        data: { status: "EM_PRODUCAO", iniciadoEm: expect.any(Date) },
+      });
+    });
+
+    it("mantem a primeira data de inicio ao voltar de um retrabalho", async () => {
+      const iniciadoEm = new Date("2026-11-01T10:00:00Z");
+      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "RETRABALHO", iniciadoEm });
+      await service.atualizarStatus("ped-1", { status: "EM_PRODUCAO" });
+
+      expect(prisma.pedido.update).toHaveBeenCalledWith({
+        where: { id: "ped-1" },
+        data: { status: "EM_PRODUCAO", iniciadoEm },
       });
     });
 
@@ -61,7 +72,7 @@ describe("filaService", () => {
 
       expect(prisma.pedido.update).toHaveBeenCalledWith({
         where: { id: "ped-1" },
-        data: { status: "CONCLUIDO", posicaoFila: null },
+        data: { status: "CONCLUIDO", posicaoFila: null, concluidoEm: expect.any(Date) },
       });
     });
 
