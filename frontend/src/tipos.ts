@@ -8,6 +8,23 @@ export type Maquina = { id: string; nome: string; tipo: string; status: string }
 
 export type AjusteValor = { id: string; descricao: string; valor: string; criadoEm: string };
 
+export type PedidoDoCliente = {
+  id: string;
+  status: string;
+  largura: string;
+  altura: string;
+  quantidade: number;
+  acabamento: string;
+  formaPagamento: string;
+  prazoEntrega: string;
+  metragemTotal: string;
+  valorTotal: string;
+  motivoRejeicao: string | null;
+  criadoEm: string;
+  concluidoEm: string | null;
+  material: { tipo: string };
+};
+
 export type Retrabalho = {
   id: string;
   motivo: string;

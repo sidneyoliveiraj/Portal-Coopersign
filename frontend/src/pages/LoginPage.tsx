@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Alert, Button, Center, Paper, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Link, useNavigate } from "react-router-dom";
+import { Alert, Anchor, Button, Center, Paper, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core";
+import { ErroApi } from "../api";
 import { useAuth } from "../auth";
 
 export function LoginPage() {
@@ -18,8 +19,12 @@ export function LoginPage() {
     try {
       await entrar(email, senha);
       navigate("/pedidos");
-    } catch {
-      setErro("E-mail ou senha incorretos.");
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi && e.status === 403
+          ? "Sua conta está inativa ou aguardando aprovação do gestor."
+          : "E-mail ou senha incorretos.",
+      );
     } finally {
       setEnviando(false);
     }
@@ -53,6 +58,9 @@ export function LoginPage() {
             <Button type="submit" loading={enviando}>
               Entrar
             </Button>
+            <Anchor component={Link} to="/cadastro" size="sm">
+              Sou cliente e quero criar uma conta
+            </Anchor>
           </Stack>
         </form>
       </Paper>

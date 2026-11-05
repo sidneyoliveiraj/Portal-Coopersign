@@ -11,6 +11,10 @@ import { FilaPage } from "./pages/FilaPage";
 import { FaturamentoPage } from "./pages/FaturamentoPage";
 import { RelatoriosPage } from "./pages/RelatoriosPage";
 import { ComprovantePage } from "./pages/ComprovantePage";
+import { CadastroClientePage } from "./pages/CadastroClientePage";
+import { MeusPedidosPage } from "./pages/MeusPedidosPage";
+import { MeuPedidoPage } from "./pages/MeuPedidoPage";
+import { ContasClientesPage } from "./pages/ContasClientesPage";
 import { ClientesPage, MaquinasPage, MateriaisPage, ServicosPage, UsuariosPage } from "./pages/CadastrosPages";
 
 export function App() {
@@ -28,7 +32,20 @@ export function App() {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/cadastro" element={<CadastroClientePage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  if (usuario.perfil === "CLIENTE") {
+    return (
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/meus-pedidos" element={<MeusPedidosPage />} />
+          <Route path="/meus-pedidos/:id" element={<MeuPedidoPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/meus-pedidos" replace />} />
       </Routes>
     );
   }
@@ -53,6 +70,7 @@ export function App() {
             <Route path="/cadastros/servicos" element={<ServicosPage />} />
             <Route path="/cadastros/maquinas" element={<MaquinasPage />} />
             <Route path="/cadastros/usuarios" element={<UsuariosPage />} />
+            <Route path="/cadastros/contas-clientes" element={<ContasClientesPage />} />
           </>
         )}
       </Route>

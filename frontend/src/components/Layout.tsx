@@ -30,10 +30,16 @@ export function Layout() {
       </AppShell.Header>
 
       <AppShell.Navbar p="sm">
-        <NavLink component={RouterLink} to="/pedidos" label="Pedidos" end />
-        {podeCriar && <NavLink component={RouterLink} to="/pedidos/novo" label="Novo pedido" />}
-        <NavLink component={RouterLink} to="/validacao" label="Validação técnica" />
-        <NavLink component={RouterLink} to="/fila" label="Fila de produção" />
+        {usuario?.perfil === "CLIENTE" ? (
+          <NavLink component={RouterLink} to="/meus-pedidos" label="Meus pedidos" />
+        ) : (
+          <>
+            <NavLink component={RouterLink} to="/pedidos" label="Pedidos" end />
+            {podeCriar && <NavLink component={RouterLink} to="/pedidos/novo" label="Novo pedido" />}
+            <NavLink component={RouterLink} to="/validacao" label="Validação técnica" />
+            <NavLink component={RouterLink} to="/fila" label="Fila de produção" />
+          </>
+        )}
         {podeCriar && (
           <>
             <NavLink component={RouterLink} to="/faturamento" label="Fechamento de conta" />
@@ -46,6 +52,7 @@ export function Layout() {
             <NavLink component={RouterLink} to="/cadastros/servicos" label="Serviços adicionais" />
             <NavLink component={RouterLink} to="/cadastros/maquinas" label="Máquinas" />
             <NavLink component={RouterLink} to="/cadastros/usuarios" label="Usuários" />
+            <NavLink component={RouterLink} to="/cadastros/contas-clientes" label="Contas de clientes" />
           </>
         )}
       </AppShell.Navbar>
