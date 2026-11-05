@@ -1,4 +1,4 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { healthRouter } from "./routes/health.routes";
 import { authRouter } from "./routes/auth.routes";
@@ -29,3 +29,11 @@ app.use("/api/materiais", materialRouter);
 app.use("/api/servicos-adicionais", servicoAdicionalRouter);
 app.use("/api/pedidos", pedidoRouter);
 app.use("/api/fila", filaRouter);
+
+app.use((erro: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if ((erro as { code?: string }).code === "P2003") {
+    return res.status(409).json({ erro: "registro em uso por pedidos, nao pode ser removido" });
+  }
+  console.error(erro);
+  return res.status(500).json({ erro: "erro interno do servidor" });
+});

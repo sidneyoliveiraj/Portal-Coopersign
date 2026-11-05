@@ -49,6 +49,11 @@ export function prismaTenant(organizacaoId: string) {
             argsComTenant.data = { ...argsComTenant.data, organizacaoId };
           }
 
+          if (operation === "update" || operation === "updateMany") {
+            const { organizacaoId: _ignorado, ...dadosSemOrganizacao } = argsComTenant.data ?? {};
+            argsComTenant.data = dadosSemOrganizacao;
+          }
+
           return query(argsComTenant);
         },
       },
