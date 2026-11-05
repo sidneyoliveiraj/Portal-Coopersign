@@ -4,6 +4,8 @@ export type Material = { id: string; tipo: string; precoM2: string };
 
 export type ServicoAdicional = { id: string; descricao: string; valorPadrao: string };
 
+export type Maquina = { id: string; nome: string; tipo: string; status: string };
+
 export type AjusteValor = { id: string; descricao: string; valor: string; criadoEm: string };
 
 export type Pedido = {
@@ -22,6 +24,9 @@ export type Pedido = {
   criadoEm: string;
   cliente: Cliente;
   material: Material;
+  maquina?: Maquina | null;
+  observacaoTecnica?: string | null;
+  motivoRejeicao?: string | null;
   pedidoServicos?: {
     id: string;
     quantidade: number;

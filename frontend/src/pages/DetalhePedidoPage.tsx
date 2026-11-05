@@ -117,6 +117,9 @@ export function DetalhePedidoPage() {
                     </Anchor>
                   }
                 />
+                {pedido.maquina && <Campo rotulo="Máquina" valor={pedido.maquina.nome} />}
+                {pedido.observacaoTecnica && <Campo rotulo="Observações técnicas" valor={pedido.observacaoTecnica} />}
+                {pedido.motivoRejeicao && <Campo rotulo="Motivo da rejeição" valor={pedido.motivoRejeicao} />}
               </SimpleGrid>
             </Paper>
 
