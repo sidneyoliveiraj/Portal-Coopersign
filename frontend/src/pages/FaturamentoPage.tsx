@@ -2,10 +2,20 @@ import { type FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Alert, Anchor, Button, Group, Paper, Select, Table, Text, TextInput, Title } from "@mantine/core";
 import { api } from "../api";
+import { Logo } from "../components/Logo";
 import type { Cliente, Pedido } from "../tipos";
-import { formatarMedidas, formatarMoeda, formatarMomento, inicioDoMes, hojeIso } from "../formato";
+import { formatarData, formatarMedidas, formatarMoeda, formatarMomento, inicioDoMes, hojeIso } from "../formato";
 
 type Conta = { pedidos: Pedido[]; total: number };
+
+const ESTILO_IMPRESSAO = `
+  .so-impressao { display: none; }
+  @media print {
+    .nao-imprimir, .mantine-AppShell-header, .mantine-AppShell-navbar { display: none !important; }
+    .so-impressao { display: block !important; }
+    .mantine-AppShell-main { padding: 0 !important; min-height: 0 !important; }
+  }
+`;
 
 export function FaturamentoPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -55,13 +65,36 @@ export function FaturamentoPage() {
     }
   }
 
+  function trocarFiltro(aplicar: () => void) {
+    aplicar();
+    setConta(null);
+    setAviso(null);
+  }
+
+  const nomeCliente = clientes.find((c) => c.id === clienteId)?.nome;
+
   return (
     <>
-      <Title order={3} mb="md">
+      <style>{ESTILO_IMPRESSAO}</style>
+
+      <div className="so-impressao">
+        <Group gap="md" mb="md">
+          <Logo tamanho={56} />
+          <div>
+            <Title order={3}>Conta em aberto</Title>
+            <Text size="sm">{nomeCliente}</Text>
+            <Text size="sm" c="dimmed">
+              Pedidos concluídos de {formatarData(inicio)} a {formatarData(fim)}
+            </Text>
+          </div>
+        </Group>
+      </div>
+
+      <Title order={3} mb="md" className="nao-imprimir">
         Fechamento de conta
       </Title>
 
-      <Paper withBorder p="md" mb="md">
+      <Paper withBorder p="md" mb="md" className="nao-imprimir">
         <form onSubmit={buscar}>
           <Group align="flex-end">
             <Select
@@ -72,10 +105,28 @@ export function FaturamentoPage() {
               style={{ flex: 1 }}
               data={clientes.map((c) => ({ value: c.id, label: c.nome }))}
               value={clienteId}
-              onChange={setClienteId}
+              onChange={(valor) => trocarFiltro(() => setClienteId(valor))}
             />
-            <TextInput label="De" type="date" required value={inicio} onChange={(e) => setInicio(e.currentTarget.value)} />
-            <TextInput label="Até" type="date" required value={fim} onChange={(e) => setFim(e.currentTarget.value)} />
+            <TextInput
+              label="De"
+              type="date"
+              required
+              value={inicio}
+              onChange={(e) => {
+                const valor = e.currentTarget.value;
+                trocarFiltro(() => setInicio(valor));
+              }}
+            />
+            <TextInput
+              label="Até"
+              type="date"
+              required
+              value={fim}
+              onChange={(e) => {
+                const valor = e.currentTarget.value;
+                trocarFiltro(() => setFim(valor));
+              }}
+            />
             <Button type="submit" disabled={!clienteId}>
               Ver conta
             </Button>
@@ -124,9 +175,14 @@ export function FaturamentoPage() {
           </Table>
           <Group justify="space-between">
             <Text fw={600}>Total: {formatarMoeda(conta.total)}</Text>
-            <Button loading={fechando} onClick={fechar}>
-              Fechar conta
-            </Button>
+            <Group gap="xs" className="nao-imprimir">
+              <Button variant="default" onClick={() => window.print()}>
+                Imprimir conta em aberto
+              </Button>
+              <Button loading={fechando} onClick={fechar}>
+                Fechar conta
+              </Button>
+            </Group>
           </Group>
         </>
       )}
