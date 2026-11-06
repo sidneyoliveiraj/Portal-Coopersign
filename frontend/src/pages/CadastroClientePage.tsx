@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { Alert, Anchor, Button, Center, Paper, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core";
 import { api } from "../api";
+import { Logo } from "../components/Logo";
 
 export function CadastroClientePage() {
   const [nome, setNome] = useState("");
@@ -26,10 +27,13 @@ export function CadastroClientePage() {
   }
 
   return (
-    <Center h="100vh" bg="gray.0">
+    <Center h="100vh" bg="coopersign.6">
       <Paper withBorder p="xl" radius="md" w={380}>
         {concluido ? (
           <Stack>
+            <Center>
+              <Logo tamanho={88} />
+            </Center>
             <Title order={3}>Cadastro recebido</Title>
             <Text size="sm">Você poderá entrar assim que o gestor aprovar o seu cadastro.</Text>
             <Anchor component={Link} to="/login" size="sm">
@@ -39,6 +43,9 @@ export function CadastroClientePage() {
         ) : (
           <form onSubmit={enviar}>
             <Stack>
+              <Center>
+                <Logo tamanho={88} />
+              </Center>
               <div>
                 <Title order={3}>Criar conta de cliente</Title>
                 <Text size="sm" c="dimmed">

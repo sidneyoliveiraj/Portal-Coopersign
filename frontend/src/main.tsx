@@ -5,10 +5,11 @@ import { MantineProvider } from "@mantine/core";
 import "@mantine/core/styles.css";
 import { AuthProvider } from "./auth";
 import { App } from "./App";
+import { tema } from "./tema";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <MantineProvider>
+    <MantineProvider theme={tema}>
       <BrowserRouter>
         <AuthProvider>
           <App />

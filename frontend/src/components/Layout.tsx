@@ -1,6 +1,8 @@
 import { NavLink as RouterLink, Outlet } from "react-router-dom";
 import { AppShell, Button, Group, NavLink, Text } from "@mantine/core";
 import { useAuth } from "../auth";
+import { AMARELO_COOPERSIGN, AZUL_COOPERSIGN } from "../tema";
+import { Logo } from "./Logo";
 
 const PERFIS: Record<string, string> = {
   ADMINISTRADOR: "Administrador",
@@ -15,14 +17,19 @@ export function Layout() {
 
   return (
     <AppShell header={{ height: 56 }} navbar={{ width: 220, breakpoint: "sm" }} padding="lg">
-      <AppShell.Header>
+      <AppShell.Header style={{ background: AZUL_COOPERSIGN, borderBottom: `3px solid ${AMARELO_COOPERSIGN}` }}>
         <Group h="100%" px="lg" justify="space-between">
-          <Text fw={700}>Portal Coopersign</Text>
           <Group gap="sm">
-            <Text size="sm" c="dimmed">
+            <Logo tamanho={36} />
+            <Text fw={700} c="white">
+              Portal Coopersign
+            </Text>
+          </Group>
+          <Group gap="sm">
+            <Text size="sm" c="white">
               {usuario && PERFIS[usuario.perfil]}
             </Text>
-            <Button variant="default" size="xs" onClick={sair}>
+            <Button variant="white" size="xs" onClick={sair}>
               Sair
             </Button>
           </Group>

@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Alert, Anchor, Button, Container, Divider, Group, Loader, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { api } from "../api";
+import { Logo } from "../components/Logo";
 import type { Pedido } from "../tipos";
 import {
   FORMA_PAGAMENTO,
@@ -56,10 +57,15 @@ export function ComprovantePage() {
         <Button onClick={() => window.print()}>Imprimir</Button>
       </Group>
 
-      <Title order={3}>Comprovante de pedido</Title>
-      <Text size="sm" c="dimmed" mb="md">
-        Portal Coopersign
-      </Text>
+      <Group gap="md" mb="md">
+        <Logo tamanho={56} />
+        <div>
+          <Title order={3}>Comprovante de pedido</Title>
+          <Text size="sm" c="dimmed">
+            Portal Coopersign
+          </Text>
+        </div>
+      </Group>
 
       <SimpleGrid cols={2} mb="md">
         <Campo rotulo="Cliente" valor={pedido.cliente.nome} />

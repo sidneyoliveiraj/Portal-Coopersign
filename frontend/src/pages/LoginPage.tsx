@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Alert, Anchor, Button, Center, Paper, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core";
 import { ErroApi } from "../api";
 import { useAuth } from "../auth";
+import { Logo } from "../components/Logo";
 
 export function LoginPage() {
   const { entrar } = useAuth();
@@ -31,10 +32,13 @@ export function LoginPage() {
   }
 
   return (
-    <Center h="100vh" bg="gray.0">
+    <Center h="100vh" bg="coopersign.6">
       <Paper withBorder p="xl" radius="md" w={380}>
         <form onSubmit={enviar}>
           <Stack>
+            <Center>
+              <Logo tamanho={88} />
+            </Center>
             <div>
               <Title order={3}>Portal Coopersign</Title>
               <Text size="sm" c="dimmed">

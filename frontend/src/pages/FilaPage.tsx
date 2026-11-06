@@ -257,8 +257,8 @@ export function FilaPage() {
                   <Table.Td ta="right">{formatarArea(pedido.metragemTotal)}</Table.Td>
                   <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
                   <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
-                  <Table.Td>
-                    <Badge color={status.cor} variant="light">
+                  <Table.Td miw={130}>
+                    <Badge color={status.cor} variant="light" style={{ overflow: "visible" }}>
                       {status.rotulo}
                     </Badge>
                   </Table.Td>
