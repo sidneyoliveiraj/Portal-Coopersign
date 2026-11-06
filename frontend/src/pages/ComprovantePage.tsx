@@ -5,9 +5,9 @@ import { api } from "../api";
 import type { Pedido } from "../tipos";
 import {
   FORMA_PAGAMENTO,
-  formatarArea,
   formatarData,
   formatarMedidas,
+  formatarMetragem,
   formatarMoeda,
   formatarMomento,
   STATUS_PEDIDO,
@@ -70,7 +70,7 @@ export function ComprovantePage() {
         <Campo rotulo="Pagamento" valor={FORMA_PAGAMENTO[pedido.formaPagamento]} />
         <Campo rotulo="Material" valor={pedido.material.tipo} />
         <Campo rotulo="Dimensões" valor={formatarMedidas(pedido)} />
-        <Campo rotulo="Metragem total" valor={formatarArea(pedido.metragemTotal)} />
+        <Campo rotulo="Metragem total" valor={formatarMetragem(pedido)} />
         <Campo rotulo="Acabamento" valor={pedido.acabamento} />
       </SimpleGrid>
       <Campo rotulo="Arquivo de arte" valor={pedido.arquivoUrl} />

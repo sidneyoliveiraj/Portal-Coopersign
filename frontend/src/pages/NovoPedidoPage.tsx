@@ -18,7 +18,7 @@ import {
 } from "@mantine/core";
 import { api } from "../api";
 import type { Cliente, Material, Pedido, ServicoAdicional } from "../tipos";
-import { formatarArea, formatarMoeda } from "../formato";
+import { arredondarCentavos, cmParaMetros, formatarArea, formatarMoeda, metragemCobrada } from "../formato";
 
 type ItemServico = { servicoAdicionalId: string; quantidade: number };
 
@@ -60,16 +60,18 @@ export function NovoPedidoPage() {
   const material = materiais.find((m) => m.id === materialId);
 
   const calculo = useMemo(() => {
-    const l = Number(largura);
-    const a = Number(altura);
+    const l = cmParaMetros(largura);
+    const a = cmParaMetros(altura);
     const q = Number(quantidade);
-    const metragem = l > 0 && a > 0 && q > 0 ? l * a * q : 0;
-    const valorBase = material ? metragem * Number(material.precoM2) : 0;
+    const preenchido = l > 0 && a > 0 && q > 0;
+    const metragem = preenchido ? l * a * q : 0;
+    const cobrada = preenchido ? metragemCobrada(l, a, q) : 0;
+    const valorBase = material ? arredondarCentavos(cobrada * Number(material.precoM2)) : 0;
     const valorServicos = itens.reduce((soma, item) => {
       const servico = servicos.find((s) => s.id === item.servicoAdicionalId);
       return soma + (servico ? Number(servico.valorPadrao) * item.quantidade : 0);
     }, 0);
-    return { metragem, valorBase, valorServicos, valorTotal: valorBase + valorServicos };
+    return { metragem, cobrada, valorBase, valorServicos, valorTotal: valorBase + valorServicos };
   }, [largura, altura, quantidade, material, itens, servicos]);
 
   function adicionarServico() {
@@ -94,8 +96,8 @@ export function NovoPedidoPage() {
         corpo: {
           clienteId,
           materialId,
-          largura,
-          altura,
+          largura: cmParaMetros(largura),
+          altura: cmParaMetros(altura),
           quantidade,
           acabamento,
           arquivoUrl,
@@ -147,21 +149,21 @@ export function NovoPedidoPage() {
 
             <Group grow>
               <NumberInput
-                label="Largura (em metros)"
-                placeholder="Ex: 1,27"
+                label="Largura (cm)"
+                placeholder="Ex: 117,5"
                 required
                 min={0}
-                decimalScale={2}
+                decimalScale={1}
                 decimalSeparator=","
                 value={largura}
                 onChange={setLargura}
               />
               <NumberInput
-                label="Altura (em metros)"
-                placeholder="Ex: 2,20"
+                label="Altura (cm)"
+                placeholder="Ex: 186,1"
                 required
                 min={0}
-                decimalScale={2}
+                decimalScale={1}
                 decimalSeparator=","
                 value={altura}
                 onChange={setAltura}
@@ -281,6 +283,14 @@ export function NovoPedidoPage() {
                 </Text>
                 <Text size="sm">{formatarArea(calculo.metragem)}</Text>
               </Group>
+              {calculo.cobrada > calculo.metragem && (
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">
+                    Cobrado (mínimo 1 m² por unidade)
+                  </Text>
+                  <Text size="sm">{formatarArea(calculo.cobrada)}</Text>
+                </Group>
+              )}
               <Group justify="space-between">
                 <Text size="sm" c="dimmed">
                   Valor base

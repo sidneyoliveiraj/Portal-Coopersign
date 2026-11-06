@@ -21,7 +21,15 @@ import { api } from "../api";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Pedido } from "../tipos";
-import { FORMA_PAGAMENTO, formatarArea, formatarData, formatarMoeda, formatarMomento, STATUS_PEDIDO } from "../formato";
+import {
+  FORMA_PAGAMENTO,
+  formatarData,
+  formatarDimensoes,
+  formatarMetragem,
+  formatarMoeda,
+  formatarMomento,
+  STATUS_PEDIDO,
+} from "../formato";
 
 function Campo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
   return (
@@ -114,7 +122,7 @@ export function DetalhePedidoPage() {
                 <Campo rotulo="Material" valor={pedido.material.tipo} />
                 <Campo
                   rotulo="Dimensões"
-                  valor={`${Number(pedido.largura).toLocaleString("pt-BR")} × ${Number(pedido.altura).toLocaleString("pt-BR")} m`}
+                  valor={formatarDimensoes(pedido)}
                 />
                 <Campo rotulo="Quantidade" valor={pedido.quantidade} />
                 <Campo rotulo="Acabamento" valor={pedido.acabamento} />
@@ -239,7 +247,7 @@ export function DetalhePedidoPage() {
                 <Text size="sm" c="dimmed">
                   Metragem
                 </Text>
-                <Text size="sm">{formatarArea(pedido.metragemTotal)}</Text>
+                <Text size="sm">{formatarMetragem(pedido)}</Text>
               </Group>
               <Group justify="space-between">
                 <Text size="sm" c="dimmed">

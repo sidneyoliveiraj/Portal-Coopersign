@@ -5,9 +5,9 @@ import { api } from "../api";
 import type { PedidoDoCliente } from "../tipos";
 import {
   FORMA_PAGAMENTO,
-  formatarArea,
   formatarData,
   formatarMedidas,
+  formatarMetragem,
   formatarMoeda,
   formatarMomento,
   STATUS_PEDIDO,
@@ -60,7 +60,7 @@ export function MeuPedidoPage() {
       <Paper withBorder p="md">
         <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="md">
           <Campo rotulo="Medidas" valor={formatarMedidas(pedido)} />
-          <Campo rotulo="Metragem total" valor={formatarArea(pedido.metragemTotal)} />
+          <Campo rotulo="Metragem total" valor={formatarMetragem(pedido)} />
           <Campo rotulo="Acabamento" valor={pedido.acabamento} />
           <Campo rotulo="Data de entrada" valor={formatarMomento(pedido.criadoEm)} />
           <Campo rotulo="Prazo de entrega" valor={formatarData(pedido.prazoEntrega)} />
