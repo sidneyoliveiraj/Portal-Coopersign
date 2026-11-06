@@ -6,6 +6,7 @@ import { servicoAdicionalRepository } from "../repositories/servico-adicional.re
 import { maquinaRepository } from "../repositories/maquina.repository";
 import {
   calcularMetragem,
+  calcularMetragemCobrada,
   calcularValorBase,
   calcularValorTotal,
   DimensaoInvalidaError,
@@ -29,7 +30,7 @@ const FORMAS_PAGAMENTO = ["A_VISTA", "EM_CONTA"] as const;
 type FormaPagamento = (typeof FORMAS_PAGAMENTO)[number];
 
 function arredondar(valor: number): number {
-  return Math.round(valor * 100) / 100;
+  return Math.round(Number((valor * 100).toFixed(6))) / 100;
 }
 
 function texto(valor: unknown, campo: string): string {
@@ -107,8 +108,10 @@ export function pedidoService(prisma: PrismaTenantClient) {
     const servicos = servicosSolicitados(dados.servicos);
 
     let metragem: number;
+    let metragemCobrada: number;
     try {
       metragem = calcularMetragem(largura, altura, quantidade);
+      metragemCobrada = calcularMetragemCobrada(largura, altura, quantidade);
     } catch (erro) {
       if (erro instanceof DimensaoInvalidaError) {
         throw new PedidoInvalidoError(erro.message);
@@ -138,7 +141,7 @@ export function pedidoService(prisma: PrismaTenantClient) {
       });
     }
 
-    const valorBase = arredondar(calcularValorBase(metragem, Number(material.precoM2)));
+    const valorBase = arredondar(calcularValorBase(metragemCobrada, Number(material.precoM2)));
     const valorTotal = arredondar(
       calcularValorTotal(
         valorBase,

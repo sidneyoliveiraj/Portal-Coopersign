@@ -49,6 +49,32 @@ describe("pedidoService.criar", () => {
     expect(pedido.formaPagamento).toBe("A_VISTA");
   });
 
+  it("cobra o minimo de 1 m2 por unidade e guarda a metragem real", async () => {
+    prisma.material.findUnique.mockResolvedValue({ id: "mat-1", precoM2: "29.00" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar({ ...pedidoValido, largura: 1.1, altura: 0.8, quantidade: 4 });
+
+    expect(pedido.metragemTotal).toBe(3.52);
+    expect(pedido.valorBase).toBe(116);
+    expect(pedido.valorTotal).toBe(116);
+  });
+
+  it("calcula medidas com milimetros sem arredondar antes da conta", async () => {
+    prisma.material.findUnique.mockResolvedValue({ id: "mat-1", precoM2: "29.00" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar({ ...pedidoValido, largura: 1.175, altura: 1.861, quantidade: 1 });
+
+    expect(pedido.valorBase).toBe(63.41);
+  });
+
+  it("arredonda meio centavo para cima", async () => {
+    prisma.material.findUnique.mockResolvedValue({ id: "mat-1", precoM2: "29.00" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar({ ...pedidoValido, largura: 0.94, altura: 1.25, quantidade: 1 });
+
+    expect(pedido.valorBase).toBe(34.08);
+  });
+
   it("soma servicos adicionais pelo valor padrao vezes a quantidade", async () => {
     const service = pedidoService(prisma as unknown as PrismaTenantClient);
     const pedido = await service.criar({

@@ -140,8 +140,8 @@ model Pedido {
   materialId     String         @map("material_id")
   maquinaId      String?        @map("maquina_id")
   status         StatusPedido   @default(RASCUNHO)
-  largura        Decimal        @db.Decimal(10, 2)
-  altura         Decimal        @db.Decimal(10, 2)
+  largura        Decimal        @db.Decimal(10, 3)
+  altura         Decimal        @db.Decimal(10, 3)
   quantidade     Int
   acabamento     String
   arquivoUrl     String         @map("arquivo_url")

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   calcularMetragem,
+  calcularMetragemCobrada,
   calcularValorBase,
   calcularValorTotal,
   DimensaoInvalidaError,
@@ -29,6 +30,26 @@ describe("calcularMetragem", () => {
     expect(() => calcularMetragem(2, 3, 0)).toThrow(DimensaoInvalidaError);
     expect(() => calcularMetragem(2, 3, -1)).toThrow(DimensaoInvalidaError);
     expect(() => calcularMetragem(2, 3, 1.5)).toThrow(DimensaoInvalidaError);
+  });
+});
+
+describe("calcularMetragemCobrada", () => {
+  it("cobra 1 m² quando a unidade tem menos que isso", () => {
+    expect(calcularMetragemCobrada(1, 0.78, 1)).toBe(1);
+  });
+
+  it("aplica o mínimo em cada unidade, não no pedido", () => {
+    expect(calcularMetragemCobrada(1.1, 0.8, 4)).toBe(4);
+  });
+
+  it("usa a metragem real quando a unidade tem 1 m² ou mais", () => {
+    expect(calcularMetragemCobrada(1, 1, 1)).toBe(1);
+    expect(calcularMetragemCobrada(1.2, 2.2, 2)).toBeCloseTo(5.28);
+  });
+
+  it("rejeita dimensão ou quantidade inválida", () => {
+    expect(() => calcularMetragemCobrada(0, 1, 1)).toThrow(DimensaoInvalidaError);
+    expect(() => calcularMetragemCobrada(1, 1, 0)).toThrow(DimensaoInvalidaError);
   });
 });
 

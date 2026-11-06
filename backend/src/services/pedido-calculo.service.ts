@@ -1,5 +1,7 @@
 export class DimensaoInvalidaError extends Error {}
 
+export const METRAGEM_MINIMA_UNIDADE = 1;
+
 export function calcularMetragem(largura: number, altura: number, quantidade: number): number {
   if (!(largura > 0) || !(altura > 0)) {
     throw new DimensaoInvalidaError("largura e altura devem ser maiores que zero");
@@ -10,6 +12,11 @@ export function calcularMetragem(largura: number, altura: number, quantidade: nu
   }
 
   return largura * altura * quantidade;
+}
+
+export function calcularMetragemCobrada(largura: number, altura: number, quantidade: number): number {
+  const metragemUnidade = calcularMetragem(largura, altura, 1);
+  return calcularMetragem(1, Math.max(metragemUnidade, METRAGEM_MINIMA_UNIDADE), quantidade);
 }
 
 export function calcularValorBase(metragem: number, precoM2: number): number {
