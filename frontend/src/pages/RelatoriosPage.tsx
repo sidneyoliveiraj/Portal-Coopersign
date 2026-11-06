@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Alert, Anchor, Button, Group, Loader, Paper, SimpleGrid, Table, Text, TextInput, Title } from "@mantine/core";
 import { api } from "../api";
 import type { Pedido } from "../tipos";
-import { FORMA_PAGAMENTO, formatarMoeda, formatarMomento, hojeIso, inicioDoMes } from "../formato";
+import { FORMA_PAGAMENTO, formatarArea, formatarMoeda, formatarMomento, hojeIso, inicioDoMes } from "../formato";
 
 type ResumoRetrabalho = { quantidade: number; custoInformado: number; semCusto: number };
 
@@ -12,6 +12,7 @@ type Indicadores = {
   receitaPorForma: { A_VISTA: number; EM_CONTA: number };
   pedidosConcluidos: number;
   pedidosPorMaquina: { maquina: string; quantidade: number }[];
+  pedidosPorMaterial: { material: string; quantidade: number; metragem: number }[];
   taxaRetrabalho: number | null;
   tempoMedioHoras: number | null;
   retrabalhoProducao: ResumoRetrabalho;
@@ -126,6 +127,32 @@ export function RelatoriosPage() {
                     <Table.Tr key={linha.maquina}>
                       <Table.Td>{linha.maquina}</Table.Td>
                       <Table.Td ta="right">{linha.quantidade}</Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </>
+          )}
+
+          {dados.pedidosPorMaterial.length > 0 && (
+            <>
+              <Title order={5} mb="xs">
+                Materiais mais usados
+              </Title>
+              <Table withTableBorder mb="md">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Material</Table.Th>
+                    <Table.Th ta="right">Pedidos</Table.Th>
+                    <Table.Th ta="right">Metragem vendida</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {dados.pedidosPorMaterial.map((linha) => (
+                    <Table.Tr key={linha.material}>
+                      <Table.Td>{linha.material}</Table.Td>
+                      <Table.Td ta="right">{linha.quantidade}</Table.Td>
+                      <Table.Td ta="right">{formatarArea(linha.metragem)}</Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Tbody>

@@ -90,6 +90,15 @@ export function faturamentoService(prisma: PrismaTenantClient) {
       porMaquina.set(nome, (porMaquina.get(nome) ?? 0) + 1);
     }
 
+    const porMaterial = new Map<string, { quantidade: number; metragem: number }>();
+    for (const pedido of concluidos) {
+      const atual = porMaterial.get(pedido.material.tipo) ?? { quantidade: 0, metragem: 0 };
+      porMaterial.set(pedido.material.tipo, {
+        quantidade: atual.quantidade + 1,
+        metragem: atual.metragem + Number(pedido.metragemTotal),
+      });
+    }
+
     const duracoes = concluidos
       .filter((pedido) => pedido.iniciadoEm && pedido.concluidoEm)
       .map((pedido) => pedido.concluidoEm!.getTime() - pedido.iniciadoEm!.getTime());
@@ -108,6 +117,9 @@ export function faturamentoService(prisma: PrismaTenantClient) {
       },
       pedidosConcluidos: concluidos.length,
       pedidosPorMaquina: [...porMaquina].map(([maquina, quantidade]) => ({ maquina, quantidade })),
+      pedidosPorMaterial: [...porMaterial]
+        .map(([material, { quantidade, metragem }]) => ({ material, quantidade, metragem: arredondar(metragem) }))
+        .sort((a, b) => b.metragem - a.metragem),
       taxaRetrabalho:
         concluidos.length > 0 ? Math.round((retrabalhos.length / concluidos.length) * 1000) / 10 : null,
       tempoMedioHoras,

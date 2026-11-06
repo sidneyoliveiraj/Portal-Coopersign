@@ -93,6 +93,8 @@ describe("faturamentoService", () => {
         .mockResolvedValueOnce([
           {
             valorTotal: "100",
+            metragemTotal: "2",
+            material: { tipo: "Lona" },
             formaPagamento: "A_VISTA",
             maquina: { nome: "Roland" },
             iniciadoEm: inicio,
@@ -100,6 +102,8 @@ describe("faturamentoService", () => {
           },
           {
             valorTotal: "50.5",
+            metragemTotal: "1",
+            material: { tipo: "Lona" },
             formaPagamento: "EM_CONTA",
             maquina: { nome: "Roland" },
             iniciadoEm: inicio,
@@ -125,6 +129,23 @@ describe("faturamentoService", () => {
       expect(resultado.taxaRetrabalho).toBe(150);
       expect(resultado.retrabalhoProducao).toEqual({ quantidade: 2, custoInformado: 30, semCusto: 1 });
       expect(resultado.retrabalhoGarantia).toEqual({ quantidade: 1, custoInformado: 80, semCusto: 0 });
+    });
+
+    it("soma pedidos e metragem por material, com o mais usado primeiro", async () => {
+      prisma.pedido.findMany
+        .mockResolvedValueOnce([
+          { valorTotal: "10", metragemTotal: "1.62", material: { tipo: "Adesivo fosco 106 cm" } },
+          { valorTotal: "10", metragemTotal: "5.10", material: { tipo: "Lona fosca 120 cm" } },
+          { valorTotal: "10", metragemTotal: "2.79", material: { tipo: "Adesivo fosco 106 cm" } },
+        ])
+        .mockResolvedValueOnce([]);
+
+      const { pedidosPorMaterial } = await service.indicadores(periodoValido);
+
+      expect(pedidosPorMaterial).toEqual([
+        { material: "Lona fosca 120 cm", quantidade: 1, metragem: 5.1 },
+        { material: "Adesivo fosco 106 cm", quantidade: 2, metragem: 4.41 },
+      ]);
     });
 
     it("nao divide por zero sem pedidos concluidos", async () => {
