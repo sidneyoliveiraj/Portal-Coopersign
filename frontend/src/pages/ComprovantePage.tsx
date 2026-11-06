@@ -3,7 +3,15 @@ import { Link, useParams } from "react-router-dom";
 import { Alert, Anchor, Button, Container, Divider, Group, Loader, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { api } from "../api";
 import type { Pedido } from "../tipos";
-import { FORMA_PAGAMENTO, formatarArea, formatarData, formatarMedidas, formatarMoeda, STATUS_PEDIDO } from "../formato";
+import {
+  FORMA_PAGAMENTO,
+  formatarArea,
+  formatarData,
+  formatarMedidas,
+  formatarMoeda,
+  formatarMomento,
+  STATUS_PEDIDO,
+} from "../formato";
 
 function Campo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
   return (
@@ -56,9 +64,9 @@ export function ComprovantePage() {
       <SimpleGrid cols={2} mb="md">
         <Campo rotulo="Cliente" valor={pedido.cliente.nome} />
         <Campo rotulo="Status" valor={STATUS_PEDIDO[pedido.status].rotulo} />
-        <Campo rotulo="Data do pedido" valor={formatarData(pedido.criadoEm)} />
+        <Campo rotulo="Data de entrada" valor={formatarMomento(pedido.criadoEm)} />
         <Campo rotulo="Prazo de entrega" valor={formatarData(pedido.prazoEntrega)} />
-        {pedido.concluidoEm && <Campo rotulo="Concluído em" valor={formatarData(pedido.concluidoEm)} />}
+        {pedido.concluidoEm && <Campo rotulo="Concluído em" valor={formatarMomento(pedido.concluidoEm)} />}
         <Campo rotulo="Pagamento" valor={FORMA_PAGAMENTO[pedido.formaPagamento]} />
         <Campo rotulo="Material" valor={pedido.material.tipo} />
         <Campo rotulo="Dimensões" valor={formatarMedidas(pedido)} />

@@ -5,7 +5,7 @@ import { api } from "../api";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Pedido } from "../tipos";
-import { formatarArea, formatarData, formatarMoeda, STATUS_PEDIDO } from "../formato";
+import { formatarArea, formatarData, formatarMoeda, formatarMomento, STATUS_PEDIDO } from "../formato";
 
 export function PedidosPage() {
   const { usuario } = useAuth();
@@ -48,6 +48,7 @@ export function PedidosPage() {
               <Table.Th>Material</Table.Th>
               <Table.Th ta="right">Metragem</Table.Th>
               <Table.Th ta="right">Valor total</Table.Th>
+              <Table.Th>Entrada</Table.Th>
               <Table.Th>Prazo</Table.Th>
               <Table.Th>Status</Table.Th>
             </Table.Tr>
@@ -65,6 +66,7 @@ export function PedidosPage() {
                   <Table.Td>{pedido.material.tipo}</Table.Td>
                   <Table.Td ta="right">{formatarArea(pedido.metragemTotal)}</Table.Td>
                   <Table.Td ta="right">{formatarMoeda(pedido.valorTotal)}</Table.Td>
+                  <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
                   <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
                   <Table.Td>
                     <Badge color={status.cor} variant="light">

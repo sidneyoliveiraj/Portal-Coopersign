@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Alert, Anchor, Button, Group, Paper, Select, Table, Text, TextInput, Title } from "@mantine/core";
 import { api } from "../api";
 import type { Cliente, Pedido } from "../tipos";
-import { formatarData, formatarMedidas, formatarMoeda, inicioDoMes, hojeIso } from "../formato";
+import { formatarMedidas, formatarMoeda, formatarMomento, inicioDoMes, hojeIso } from "../formato";
 
 type Conta = { pedidos: Pedido[]; total: number };
 
@@ -112,7 +112,7 @@ export function FaturamentoPage() {
                 <Table.Tr key={pedido.id}>
                   <Table.Td>
                     <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
-                      {pedido.concluidoEm ? formatarData(pedido.concluidoEm) : "—"}
+                      {pedido.concluidoEm ? formatarMomento(pedido.concluidoEm) : "—"}
                     </Anchor>
                   </Table.Td>
                   <Table.Td>{pedido.material.tipo}</Table.Td>

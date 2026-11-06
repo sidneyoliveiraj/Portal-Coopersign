@@ -21,7 +21,7 @@ import { api } from "../api";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Pedido } from "../tipos";
-import { FORMA_PAGAMENTO, formatarArea, formatarData, formatarMoeda, STATUS_PEDIDO } from "../formato";
+import { FORMA_PAGAMENTO, formatarArea, formatarData, formatarMoeda, formatarMomento, STATUS_PEDIDO } from "../formato";
 
 function Campo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
   return (
@@ -118,6 +118,7 @@ export function DetalhePedidoPage() {
                 />
                 <Campo rotulo="Quantidade" valor={pedido.quantidade} />
                 <Campo rotulo="Acabamento" valor={pedido.acabamento} />
+                <Campo rotulo="Data de entrada" valor={formatarMomento(pedido.criadoEm)} />
                 <Campo rotulo="Prazo de entrega" valor={formatarData(pedido.prazoEntrega)} />
                 <Campo rotulo="Pagamento" valor={FORMA_PAGAMENTO[pedido.formaPagamento]} />
                 <Campo
@@ -162,7 +163,7 @@ export function DetalhePedidoPage() {
                   <Table.Tbody>
                     {retrabalhos.map((r) => (
                       <Table.Tr key={r.id}>
-                        <Table.Td>{formatarData(r.criadoEm)}</Table.Td>
+                        <Table.Td>{formatarMomento(r.criadoEm)}</Table.Td>
                         <Table.Td>{r.motivo}</Table.Td>
                         <Table.Td>{r.garantia ? "Garantia" : "Produção"}</Table.Td>
                         <Table.Td ta="right">
@@ -188,7 +189,7 @@ export function DetalhePedidoPage() {
                   <Table.Tbody>
                     {ajustes.map((a) => (
                       <Table.Tr key={a.id}>
-                        <Table.Td>{formatarData(a.criadoEm)}</Table.Td>
+                        <Table.Td>{formatarMomento(a.criadoEm)}</Table.Td>
                         <Table.Td>{a.descricao}</Table.Td>
                         <Table.Td ta="right" c={Number(a.valor) < 0 ? "red" : undefined}>
                           {formatarMoeda(a.valor)}

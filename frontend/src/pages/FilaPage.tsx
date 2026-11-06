@@ -20,7 +20,7 @@ import { api } from "../api";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Maquina, Pedido } from "../tipos";
-import { formatarArea, formatarData, formatarMedidas, formatarMoeda, STATUS_PEDIDO } from "../formato";
+import { formatarArea, formatarData, formatarMedidas, formatarMoeda, formatarMomento, STATUS_PEDIDO } from "../formato";
 
 type RetrabalhoAberto = { pedido: Pedido; garantia: boolean };
 
@@ -225,6 +225,7 @@ export function FilaPage() {
               <Table.Th>Material</Table.Th>
               <Table.Th>Medidas</Table.Th>
               <Table.Th ta="right">Metragem</Table.Th>
+              <Table.Th>Entrada</Table.Th>
               <Table.Th>Prazo</Table.Th>
               <Table.Th>Status</Table.Th>
               <Table.Th>Ações</Table.Th>
@@ -254,6 +255,7 @@ export function FilaPage() {
                   <Table.Td>{pedido.material.tipo}</Table.Td>
                   <Table.Td>{formatarMedidas(pedido)}</Table.Td>
                   <Table.Td ta="right">{formatarArea(pedido.metragemTotal)}</Table.Td>
+                  <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
                   <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
                   <Table.Td>
                     <Badge color={status.cor} variant="light">

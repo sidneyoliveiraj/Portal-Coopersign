@@ -4,7 +4,7 @@ import { Alert, Badge, Loader, Table, Text, Title } from "@mantine/core";
 import { api } from "../api";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import type { PedidoDoCliente } from "../tipos";
-import { formatarData, formatarMedidas, formatarMoeda, STATUS_PEDIDO } from "../formato";
+import { formatarData, formatarMedidas, formatarMoeda, formatarMomento, STATUS_PEDIDO } from "../formato";
 
 const STATUS_ENCERRADOS = ["CONCLUIDO", "FATURADO", "REJEITADO"];
 
@@ -15,7 +15,7 @@ function TabelaPedidos({ pedidos }: { pedidos: PedidoDoCliente[] }) {
     <Table withTableBorder highlightOnHover>
       <Table.Thead>
         <Table.Tr>
-          <Table.Th>Pedido em</Table.Th>
+          <Table.Th>Entrada</Table.Th>
           <Table.Th>Material</Table.Th>
           <Table.Th>Medidas</Table.Th>
           <Table.Th>Prazo</Table.Th>
@@ -28,7 +28,7 @@ function TabelaPedidos({ pedidos }: { pedidos: PedidoDoCliente[] }) {
           const status = STATUS_PEDIDO[pedido.status];
           return (
             <Table.Tr key={pedido.id} style={{ cursor: "pointer" }} onClick={() => navigate(`/meus-pedidos/${pedido.id}`)}>
-              <Table.Td>{formatarData(pedido.criadoEm)}</Table.Td>
+              <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
               <Table.Td>{pedido.material.tipo}</Table.Td>
               <Table.Td>{formatarMedidas(pedido)}</Table.Td>
               <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>

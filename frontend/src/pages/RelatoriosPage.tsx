@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Alert, Anchor, Button, Group, Loader, Paper, SimpleGrid, Table, Text, TextInput, Title } from "@mantine/core";
 import { api } from "../api";
 import type { Pedido } from "../tipos";
-import { FORMA_PAGAMENTO, formatarData, formatarMoeda, hojeIso, inicioDoMes } from "../formato";
+import { FORMA_PAGAMENTO, formatarMoeda, formatarMomento, hojeIso, inicioDoMes } from "../formato";
 
 type ResumoRetrabalho = { quantidade: number; custoInformado: number; semCusto: number };
 
@@ -150,7 +150,7 @@ export function RelatoriosPage() {
               <Table.Tbody>
                 {dados.pedidos.map((pedido) => (
                   <Table.Tr key={pedido.id}>
-                    <Table.Td>{pedido.concluidoEm ? formatarData(pedido.concluidoEm) : "—"}</Table.Td>
+                    <Table.Td>{pedido.concluidoEm ? formatarMomento(pedido.concluidoEm) : "—"}</Table.Td>
                     <Table.Td>
                       <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
                         {pedido.cliente.nome}

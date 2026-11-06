@@ -26,6 +26,10 @@ export function formatarData(valor: string) {
   return new Date(valor).toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
+export function formatarMomento(valor: string) {
+  return new Date(valor).toLocaleDateString("pt-BR");
+}
+
 export const STATUS_PEDIDO: Record<string, { rotulo: string; cor: string }> = {
   RASCUNHO: { rotulo: "Rascunho", cor: "gray" },
   AGUARDANDO_VALIDACAO: { rotulo: "Aguardando validação", cor: "yellow" },

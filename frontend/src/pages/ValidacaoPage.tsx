@@ -4,7 +4,7 @@ import { Alert, Anchor, Button, Group, Loader, Paper, Select, Stack, Text, TextI
 import { api } from "../api";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import type { Maquina, Pedido } from "../tipos";
-import { formatarArea, formatarData, formatarMedidas } from "../formato";
+import { formatarArea, formatarData, formatarMedidas, formatarMomento } from "../formato";
 
 function CartaoValidacao({
   pedido,
@@ -40,7 +40,7 @@ function CartaoValidacao({
           {pedido.cliente.nome}
         </Anchor>
         <Text size="sm" c="dimmed">
-          Prazo: {formatarData(pedido.prazoEntrega)}
+          Entrada: {formatarMomento(pedido.criadoEm)} · Prazo: {formatarData(pedido.prazoEntrega)}
         </Text>
       </Group>
       <Text size="sm" mb="sm">

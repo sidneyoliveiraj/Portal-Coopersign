@@ -3,7 +3,15 @@ import { Link, useParams } from "react-router-dom";
 import { Alert, Anchor, Badge, Group, Loader, Paper, SimpleGrid, Text, Title } from "@mantine/core";
 import { api } from "../api";
 import type { PedidoDoCliente } from "../tipos";
-import { FORMA_PAGAMENTO, formatarArea, formatarData, formatarMedidas, formatarMoeda, STATUS_PEDIDO } from "../formato";
+import {
+  FORMA_PAGAMENTO,
+  formatarArea,
+  formatarData,
+  formatarMedidas,
+  formatarMoeda,
+  formatarMomento,
+  STATUS_PEDIDO,
+} from "../formato";
 
 function Campo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
   return (
@@ -54,9 +62,9 @@ export function MeuPedidoPage() {
           <Campo rotulo="Medidas" valor={formatarMedidas(pedido)} />
           <Campo rotulo="Metragem total" valor={formatarArea(pedido.metragemTotal)} />
           <Campo rotulo="Acabamento" valor={pedido.acabamento} />
-          <Campo rotulo="Data do pedido" valor={formatarData(pedido.criadoEm)} />
+          <Campo rotulo="Data de entrada" valor={formatarMomento(pedido.criadoEm)} />
           <Campo rotulo="Prazo de entrega" valor={formatarData(pedido.prazoEntrega)} />
-          {pedido.concluidoEm && <Campo rotulo="Concluído em" valor={formatarData(pedido.concluidoEm)} />}
+          {pedido.concluidoEm && <Campo rotulo="Concluído em" valor={formatarMomento(pedido.concluidoEm)} />}
           <Campo rotulo="Pagamento" valor={FORMA_PAGAMENTO[pedido.formaPagamento]} />
           <Campo rotulo="Valor total" valor={formatarMoeda(pedido.valorTotal)} />
           {pedido.motivoRejeicao && <Campo rotulo="Motivo da rejeição" valor={pedido.motivoRejeicao} />}
