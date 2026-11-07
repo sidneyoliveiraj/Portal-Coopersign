@@ -5,6 +5,7 @@ import { materialRepository } from "../repositories/material.repository";
 import { servicoAdicionalRepository } from "../repositories/servico-adicional.repository";
 import { maquinaRepository } from "../repositories/maquina.repository";
 import {
+  arredondarCentavos as arredondar,
   calcularMetragem,
   calcularMetragemCobrada,
   calcularValorBase,
@@ -28,10 +29,6 @@ export class PedidoInvalidoError extends Error {
 
 const FORMAS_PAGAMENTO = ["A_VISTA", "EM_CONTA"] as const;
 type FormaPagamento = (typeof FORMAS_PAGAMENTO)[number];
-
-function arredondar(valor: number): number {
-  return Math.round(Number((valor * 100).toFixed(6))) / 100;
-}
 
 function texto(valor: unknown, campo: string): string {
   if (typeof valor !== "string" || valor.trim().length === 0) {

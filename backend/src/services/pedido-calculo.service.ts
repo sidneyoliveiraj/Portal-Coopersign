@@ -1,9 +1,19 @@
 export class DimensaoInvalidaError extends Error {}
 
+export class ValorInvalidoError extends Error {}
+
 export const METRAGEM_MINIMA_UNIDADE = 1;
 
+export function arredondarCentavos(valor: number): number {
+  return Math.round(Number((valor * 100).toFixed(6))) / 100;
+}
+
+function positivoFinito(valor: number): boolean {
+  return Number.isFinite(valor) && valor > 0;
+}
+
 export function calcularMetragem(largura: number, altura: number, quantidade: number): number {
-  if (!(largura > 0) || !(altura > 0)) {
+  if (!positivoFinito(largura) || !positivoFinito(altura)) {
     throw new DimensaoInvalidaError("largura e altura devem ser maiores que zero");
   }
 
@@ -20,7 +30,7 @@ export function calcularMetragemCobrada(largura: number, altura: number, quantid
 }
 
 export function calcularValorBase(metragem: number, precoM2: number): number {
-  return metragem * precoM2;
+  return arredondarCentavos(metragem * precoM2);
 }
 
 export function calcularValorTotal(
@@ -30,5 +40,11 @@ export function calcularValorTotal(
 ): number {
   const totalServicos = servicosAdicionais.reduce((soma, valor) => soma + valor, 0);
   const totalAjustes = ajustes.reduce((soma, valor) => soma + valor, 0);
-  return valorBase + totalServicos + totalAjustes;
+  const total = arredondarCentavos(valorBase + totalServicos + totalAjustes);
+
+  if (total < 0) {
+    throw new ValorInvalidoError("valor total nao pode ser negativo");
+  }
+
+  return total;
 }

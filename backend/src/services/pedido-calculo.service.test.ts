@@ -5,6 +5,7 @@ import {
   calcularValorBase,
   calcularValorTotal,
   DimensaoInvalidaError,
+  ValorInvalidoError,
 } from "./pedido-calculo.service";
 
 describe("calcularMetragem", () => {
@@ -24,6 +25,11 @@ describe("calcularMetragem", () => {
   it("rejeita dimensão zero ou inválida", () => {
     expect(() => calcularMetragem(0, 3, 1)).toThrow(DimensaoInvalidaError);
     expect(() => calcularMetragem(Number.NaN, 3, 1)).toThrow(DimensaoInvalidaError);
+  });
+
+  it("rejeita dimensão infinita", () => {
+    expect(() => calcularMetragem(Infinity, 1, 1)).toThrow(DimensaoInvalidaError);
+    expect(() => calcularMetragem(1, Infinity, 1)).toThrow(DimensaoInvalidaError);
   });
 
   it("rejeita quantidade zero, negativa ou fracionada", () => {
@@ -61,6 +67,10 @@ describe("calcularValorBase", () => {
   it("calcula valor base com metragem fracionada", () => {
     expect(calcularValorBase(9.9, 45.5)).toBeCloseTo(450.45);
   });
+
+  it("arredonda para centavos", () => {
+    expect(calcularValorBase(calcularMetragem(1.1, 1.1, 1), 35.9)).toBe(43.44);
+  });
 });
 
 describe("calcularValorTotal", () => {
@@ -74,5 +84,17 @@ describe("calcularValorTotal", () => {
 
   it("funciona sem serviços nem ajustes", () => {
     expect(calcularValorTotal(300, [], [])).toBe(300);
+  });
+
+  it("arredonda o total para centavos", () => {
+    expect(calcularValorTotal(0.1, [0.2], [])).toBe(0.3);
+  });
+
+  it("rejeita desconto maior que o pedido", () => {
+    expect(() => calcularValorTotal(100, [], [-150])).toThrow(ValorInvalidoError);
+  });
+
+  it("aceita desconto que zera o pedido", () => {
+    expect(calcularValorTotal(100, [], [-100])).toBe(0);
   });
 });
