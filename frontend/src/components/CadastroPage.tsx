@@ -15,6 +15,7 @@ import {
   Title,
 } from "@mantine/core";
 import { api } from "../api";
+import { useConfirmacao } from "../confirmacao";
 
 export type Item = { id: string } & Record<string, unknown>;
 
@@ -59,6 +60,7 @@ function valorDoCampo(campo: CampoCadastro, valor: string | number) {
 }
 
 export function CadastroPage({ titulo, singular, caminho, chaveLista, campos, colunas, podeRemover = true }: Props) {
+  const confirmar = useConfirmacao();
   const [itens, setItens] = useState<Item[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aberto, setAberto] = useState(false);
@@ -111,7 +113,13 @@ export function CadastroPage({ titulo, singular, caminho, chaveLista, campos, co
   }
 
   async function remover(item: Item) {
-    if (!window.confirm(`Remover este registro de ${singular.toLowerCase()}?`)) {
+    const confirmado = await confirmar({
+      titulo: `Remover ${singular.toLowerCase()}`,
+      mensagem: `Remover este registro de ${singular.toLowerCase()}?`,
+      rotuloConfirmar: "Remover",
+      cor: "red",
+    });
+    if (!confirmado) {
       return;
     }
     setErro(null);

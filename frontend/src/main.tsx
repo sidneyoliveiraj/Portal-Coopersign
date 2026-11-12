@@ -4,17 +4,20 @@ import { BrowserRouter } from "react-router-dom";
 import { MantineProvider } from "@mantine/core";
 import "@mantine/core/styles.css";
 import { AuthProvider } from "./auth";
+import { ConfirmacaoProvider } from "./confirmacao";
 import { App } from "./App";
 import { tema } from "./tema";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <MantineProvider theme={tema}>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
+      <ConfirmacaoProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </BrowserRouter>
+      </ConfirmacaoProvider>
     </MantineProvider>
   </StrictMode>,
 );

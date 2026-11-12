@@ -17,6 +17,7 @@ import {
   Title,
 } from "@mantine/core";
 import { api } from "../api";
+import { useConfirmacao } from "../confirmacao";
 import type { Cliente, Material, Pedido, ServicoAdicional } from "../tipos";
 import { arredondarCentavos, cmParaMetros, formatarArea, formatarMoeda, metragemCobrada } from "../formato";
 
@@ -24,6 +25,7 @@ type ItemServico = { servicoAdicionalId: string; quantidade: number };
 
 export function NovoPedidoPage() {
   const navigate = useNavigate();
+  const confirmar = useConfirmacao();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [servicos, setServicos] = useState<ServicoAdicional[]>([]);
@@ -88,6 +90,15 @@ export function NovoPedidoPage() {
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
+    const cliente = clientes.find((c) => c.id === clienteId);
+    const confirmado = await confirmar({
+      titulo: "Registrar pedido",
+      mensagem: `Registrar o pedido de ${cliente?.nome ?? "cliente"} no valor de ${formatarMoeda(calculo.valorTotal)}?`,
+      rotuloConfirmar: "Registrar",
+    });
+    if (!confirmado) {
+      return;
+    }
     setErro(null);
     setEnviando(true);
     try {

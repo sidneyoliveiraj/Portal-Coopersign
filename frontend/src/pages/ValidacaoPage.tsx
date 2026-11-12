@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Alert, Anchor, Button, Group, Loader, Paper, Select, Stack, Text, TextInput, Textarea, Title } from "@mantine/core";
 import { api } from "../api";
+import { useConfirmacao } from "../confirmacao";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import type { Maquina, Pedido } from "../tipos";
 import { formatarArea, formatarData, formatarMedidas, formatarMomento } from "../formato";
@@ -15,6 +16,7 @@ function CartaoValidacao({
   maquinas: Maquina[];
   aoConcluir: () => void;
 }) {
+  const confirmar = useConfirmacao();
   const [maquinaId, setMaquinaId] = useState<string | null>(null);
   const [observacaoTecnica, setObservacaoTecnica] = useState("");
   const [justificativa, setJustificativa] = useState("");
@@ -22,6 +24,24 @@ function CartaoValidacao({
   const [salvando, setSalvando] = useState(false);
 
   async function enviar(acao: "aprovar" | "rejeitar", corpo: Record<string, unknown>) {
+    const maquina = maquinas.find((m) => m.id === maquinaId);
+    const confirmado = await confirmar(
+      acao === "aprovar"
+        ? {
+            titulo: "Aprovar pedido",
+            mensagem: `Aprovar o pedido de ${pedido.cliente.nome} e enviar para a fila da ${maquina?.nome ?? "máquina"}?`,
+            rotuloConfirmar: "Aprovar e enviar",
+          }
+        : {
+            titulo: "Rejeitar pedido",
+            mensagem: `Rejeitar o pedido de ${pedido.cliente.nome}? Ele sai da validação e não vai para a fila.`,
+            rotuloConfirmar: "Rejeitar",
+            cor: "red",
+          },
+    );
+    if (!confirmado) {
+      return;
+    }
     setErro(null);
     setSalvando(true);
     try {

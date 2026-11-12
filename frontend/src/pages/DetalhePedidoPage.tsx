@@ -19,6 +19,7 @@ import {
   Title,
 } from "@mantine/core";
 import { api } from "../api";
+import { useConfirmacao } from "../confirmacao";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Pedido } from "../tipos";
@@ -46,6 +47,7 @@ function Campo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
 export function DetalhePedidoPage() {
   const { id } = useParams();
   const { usuario } = useAuth();
+  const confirmar = useConfirmacao();
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -89,7 +91,12 @@ export function DetalhePedidoPage() {
     if (!pedido || !nova || nova === pedido.formaPagamento) {
       return;
     }
-    if (!window.confirm(`Mudar a forma de pagamento para "${FORMA_PAGAMENTO[nova]}"?`)) {
+    const confirmado = await confirmar({
+      titulo: "Forma de pagamento",
+      mensagem: `Mudar a forma de pagamento para "${FORMA_PAGAMENTO[nova]}"?`,
+      rotuloConfirmar: "Mudar",
+    });
+    if (!confirmado) {
       return;
     }
     setErroPagamento(null);

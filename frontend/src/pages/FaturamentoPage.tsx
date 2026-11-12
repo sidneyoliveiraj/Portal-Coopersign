@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Alert, Anchor, Button, Group, Paper, Select, Table, Text, TextInput, Title } from "@mantine/core";
 import { api } from "../api";
+import { useConfirmacao } from "../confirmacao";
 import { Logo } from "../components/Logo";
 import type { Cliente, Pedido } from "../tipos";
 import { formatarData, formatarMedidas, formatarMoeda, formatarMomento, inicioDoMes, hojeIso } from "../formato";
@@ -18,6 +19,7 @@ const ESTILO_IMPRESSAO = `
 `;
 
 export function FaturamentoPage() {
+  const confirmar = useConfirmacao();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [inicio, setInicio] = useState(inicioDoMes());
@@ -46,7 +48,16 @@ export function FaturamentoPage() {
   }
 
   async function fechar() {
-    if (!conta || !window.confirm(`Fechar a conta no valor de ${formatarMoeda(conta.total)}?`)) {
+    if (!conta) {
+      return;
+    }
+    const cliente = clientes.find((c) => c.id === clienteId);
+    const confirmado = await confirmar({
+      titulo: "Fechar conta",
+      mensagem: `Fechar a conta de ${cliente?.nome ?? "cliente"} no valor de ${formatarMoeda(conta.total)}? Os pedidos passam para faturado.`,
+      rotuloConfirmar: "Fechar conta",
+    });
+    if (!confirmado) {
       return;
     }
     setErro(null);
