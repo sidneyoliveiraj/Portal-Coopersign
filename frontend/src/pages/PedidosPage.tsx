@@ -1,7 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Alert, Badge, Button, Group, Loader, Table, Text, Title } from "@mantine/core";
+import {
+  Alert,
+  Badge,
+  Button,
+  Group,
+  Loader,
+  MultiSelect,
+  Paper,
+  Select,
+  SimpleGrid,
+  Table,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
 import { api } from "../api";
+import { FILTRO_VAZIO, type FiltroPedidos, filtrarPedidos, filtroAtivo } from "../filtroPedidos";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Pedido } from "../tipos";
@@ -25,6 +40,18 @@ export function PedidosPage() {
 
   const podeCriar = usuario?.perfil === "ADMINISTRADOR" || usuario?.perfil === "GESTOR";
 
+  const [filtro, setFiltro] = useState<FiltroPedidos>(FILTRO_VAZIO);
+  const alterarFiltro = (parcial: Partial<FiltroPedidos>) => setFiltro((atual) => ({ ...atual, ...parcial }));
+
+  // Clientes que aparecem nos pedidos, em ordem alfabética, para o filtro.
+  const opcoesClientes = useMemo(() => {
+    const nomes = new Map<string, string>();
+    pedidos?.forEach((p) => nomes.set(p.cliente.id, p.cliente.nome));
+    return [...nomes].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [pedidos]);
+
+  const visiveis = useMemo(() => (pedidos ? filtrarPedidos(pedidos, filtro) : []), [pedidos, filtro]);
+
   return (
     <>
       <Group justify="space-between" mb="md">
@@ -41,6 +68,56 @@ export function PedidosPage() {
       {pedidos?.length === 0 && <Text c="dimmed">Nenhum pedido cadastrado ainda.</Text>}
 
       {pedidos && pedidos.length > 0 && (
+        <Paper withBorder p="sm" mb="md">
+          <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="sm">
+            <MultiSelect
+              label="Status"
+              placeholder={filtro.status.length === 0 ? "Todos" : undefined}
+              data={Object.entries(STATUS_PEDIDO).map(([value, s]) => ({ value, label: s.rotulo }))}
+              value={filtro.status}
+              onChange={(status) => alterarFiltro({ status })}
+              clearable
+            />
+            <Select
+              label="Cliente"
+              placeholder="Todos"
+              data={opcoesClientes}
+              value={filtro.clienteId}
+              onChange={(clienteId) => alterarFiltro({ clienteId })}
+              searchable
+              clearable
+            />
+            <TextInput
+              label="Entrada de"
+              type="date"
+              value={filtro.inicio}
+              onChange={(e) => alterarFiltro({ inicio: e.currentTarget.value })}
+            />
+            <TextInput
+              label="Entrada até"
+              type="date"
+              value={filtro.fim}
+              onChange={(e) => alterarFiltro({ fim: e.currentTarget.value })}
+            />
+          </SimpleGrid>
+          <Group justify="space-between" mt="sm">
+            <Text size="sm" c="dimmed">
+              {visiveis.length} de {pedidos.length} pedido(s)
+            </Text>
+            {filtroAtivo(filtro) && (
+              <Button variant="subtle" size="xs" onClick={() => setFiltro(FILTRO_VAZIO)}>
+                Limpar filtros
+              </Button>
+            )}
+          </Group>
+        </Paper>
+      )}
+
+      {pedidos && pedidos.length > 0 && visiveis.length === 0 && (
+        <Text c="dimmed">Nenhum pedido com esses filtros.</Text>
+      )}
+
+      {visiveis.length > 0 && (
         <Table highlightOnHover withTableBorder>
           <Table.Thead>
             <Table.Tr>
@@ -54,7 +131,7 @@ export function PedidosPage() {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {pedidos.map((pedido) => {
+            {visiveis.map((pedido) => {
               const status = STATUS_PEDIDO[pedido.status];
               return (
                 <Table.Tr
