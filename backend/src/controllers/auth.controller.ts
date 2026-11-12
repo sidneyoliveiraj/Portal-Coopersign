@@ -6,7 +6,15 @@ import { cadastrarCliente, CadastroInvalidoError } from "../services/cadastro-cl
 export async function loginController(req: Request, res: Response) {
   const { email, senha, organizacaoId } = req.body;
 
-  if (!email || !senha) {
+  // Só aceita texto: um objeto como { "contains": "@" } viraria filtro do
+  // Prisma e buscaria usuários de todas as organizações (review do Max, PR #2).
+  if (
+    typeof email !== "string" ||
+    typeof senha !== "string" ||
+    email.length === 0 ||
+    senha.length === 0 ||
+    (organizacaoId !== undefined && typeof organizacaoId !== "string")
+  ) {
     return res.status(400).json({ erro: "email e senha sao obrigatorios" });
   }
 
