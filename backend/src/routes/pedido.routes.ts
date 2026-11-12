@@ -4,6 +4,7 @@ import {
   listarPedidosController,
   buscarPedidoController,
   ajustarValorPedidoController,
+  alterarFormaPagamentoController,
   listarPendentesValidacaoController,
   aprovarPedidoController,
   rejeitarPedidoController,
@@ -56,6 +57,13 @@ pedidoRouter.post(
   autorizar("ADMINISTRADOR", "GESTOR"),
   injetarTenant,
   criarPedidoController,
+);
+
+pedidoRouter.patch(
+  "/:id/forma-pagamento",
+  autorizar("ADMINISTRADOR", "GESTOR"),
+  injetarTenant,
+  alterarFormaPagamentoController,
 );
 
 pedidoRouter.post(

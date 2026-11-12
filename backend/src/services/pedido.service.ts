@@ -231,5 +231,34 @@ export function pedidoService(prisma: PrismaTenantClient) {
     return repository.rejeitar(id, justificativa, textoOpcional(dados.observacaoTecnica));
   }
 
-  return { criar, listar, buscarPorId, ajustarValor, listarPendentesValidacao, aprovar, rejeitar };
+  // RN07: o padrao e "a vista", e o gestor pode mudar depois (ex.: o cliente
+  // disse que pagaria na hora e deixou para depois). Pedido faturado ja saiu
+  // da conta do cliente, entao nao muda mais.
+  async function alterarFormaPagamento(id: string, dados: Record<string, unknown>) {
+    if (dados.formaPagamento === undefined) {
+      throw new PedidoInvalidoError("formaPagamento e obrigatorio");
+    }
+    const nova = formaPagamento(dados.formaPagamento);
+
+    const pedido = await buscarPorId(id);
+    if (pedido.status === "FATURADO") {
+      throw new PedidoInvalidoError("pedido ja faturado nao pode mudar a forma de pagamento");
+    }
+    if (pedido.formaPagamento === nova) {
+      return pedido;
+    }
+
+    return repository.alterarFormaPagamento(id, nova);
+  }
+
+  return {
+    criar,
+    listar,
+    buscarPorId,
+    ajustarValor,
+    alterarFormaPagamento,
+    listarPendentesValidacao,
+    aprovar,
+    rejeitar,
+  };
 }

@@ -1,4 +1,4 @@
-import { Prisma } from "../generated/prisma/client";
+import { FormaPagamento, Prisma } from "../generated/prisma/client";
 import { PrismaTenantClient } from "../lib/prisma-tenant";
 
 export type PedidoCriarInput = Omit<Prisma.PedidoUncheckedCreateInput, "organizacaoId">;
@@ -52,6 +52,14 @@ export function pedidoRepository(prisma: PrismaTenantClient) {
       return prisma.pedido.update({
         where: { id },
         data: { status: "REJEITADO", motivoRejeicao, observacaoTecnica },
+        include: detalhesPedido,
+      });
+    },
+
+    alterarFormaPagamento(id: string, formaPagamento: FormaPagamento) {
+      return prisma.pedido.update({
+        where: { id },
+        data: { formaPagamento },
         include: detalhesPedido,
       });
     },

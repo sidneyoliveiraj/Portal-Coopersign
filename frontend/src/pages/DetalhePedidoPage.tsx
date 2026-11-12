@@ -10,6 +10,7 @@ import {
   Loader,
   NumberInput,
   Paper,
+  Select,
   SimpleGrid,
   Stack,
   Table,
@@ -52,6 +53,7 @@ export function DetalhePedidoPage() {
   const [justificativa, setJustificativa] = useState("");
   const [erroAjuste, setErroAjuste] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [erroPagamento, setErroPagamento] = useState<string | null>(null);
 
   const carregar = useCallback(() => {
     api<{ pedido: Pedido }>(`/pedidos/${id}`)
@@ -79,6 +81,26 @@ export function DetalhePedidoPage() {
       setErroAjuste(e instanceof Error ? e.message : "erro ao registrar ajuste");
     } finally {
       setSalvando(false);
+    }
+  }
+
+  // RN07: o gestor muda a forma de pagamento depois, com confirmação.
+  async function alterarFormaPagamento(nova: string | null) {
+    if (!pedido || !nova || nova === pedido.formaPagamento) {
+      return;
+    }
+    if (!window.confirm(`Mudar a forma de pagamento para "${FORMA_PAGAMENTO[nova]}"?`)) {
+      return;
+    }
+    setErroPagamento(null);
+    try {
+      const resposta = await api<{ pedido: Pedido }>(`/pedidos/${id}/forma-pagamento`, {
+        metodo: "PATCH",
+        corpo: { formaPagamento: nova },
+      });
+      setPedido(resposta.pedido);
+    } catch (e) {
+      setErroPagamento(e instanceof Error ? e.message : "erro ao mudar a forma de pagamento");
     }
   }
 
@@ -128,7 +150,19 @@ export function DetalhePedidoPage() {
                 <Campo rotulo="Acabamento" valor={pedido.acabamento} />
                 <Campo rotulo="Data de entrada" valor={formatarMomento(pedido.criadoEm)} />
                 <Campo rotulo="Prazo de entrega" valor={formatarData(pedido.prazoEntrega)} />
-                <Campo rotulo="Pagamento" valor={FORMA_PAGAMENTO[pedido.formaPagamento]} />
+                {podeAjustar ? (
+                  <Select
+                    label="Pagamento"
+                    size="xs"
+                    allowDeselect={false}
+                    data={Object.entries(FORMA_PAGAMENTO).map(([value, label]) => ({ value, label }))}
+                    value={pedido.formaPagamento}
+                    onChange={alterarFormaPagamento}
+                    error={erroPagamento}
+                  />
+                ) : (
+                  <Campo rotulo="Pagamento" valor={FORMA_PAGAMENTO[pedido.formaPagamento]} />
+                )}
                 <Campo
                   rotulo="Arquivo de arte"
                   valor={

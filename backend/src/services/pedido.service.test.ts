@@ -272,3 +272,67 @@ describe("pedidoService.ajustarValor", () => {
     ).rejects.toThrow(PedidoNaoEncontradoError);
   });
 });
+
+describe("pedidoService.alterarFormaPagamento (RN07)", () => {
+  let prisma: ReturnType<typeof criarPrismaFalso>;
+
+  beforeEach(() => {
+    prisma = criarPrismaFalso();
+    prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "CONCLUIDO", formaPagamento: "A_VISTA" });
+    prisma.pedido.update.mockResolvedValue({ id: "ped-1", status: "CONCLUIDO", formaPagamento: "EM_CONTA" });
+  });
+
+  it("muda de a vista para em conta", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    const pedido = await service.alterarFormaPagamento("ped-1", { formaPagamento: "EM_CONTA" });
+
+    expect(prisma.pedido.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "ped-1" }, data: { formaPagamento: "EM_CONTA" } }),
+    );
+    expect(pedido.formaPagamento).toBe("EM_CONTA");
+  });
+
+  it("exige a forma de pagamento", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.alterarFormaPagamento("ped-1", {})).rejects.toThrow("formaPagamento e obrigatorio");
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("recusa forma de pagamento desconhecida", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.alterarFormaPagamento("ped-1", { formaPagamento: "PIX" })).rejects.toThrow(
+      "formaPagamento deve ser A_VISTA ou EM_CONTA",
+    );
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("bloqueia pedido ja faturado", async () => {
+    prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "FATURADO", formaPagamento: "EM_CONTA" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.alterarFormaPagamento("ped-1", { formaPagamento: "A_VISTA" })).rejects.toThrow(
+      "pedido ja faturado nao pode mudar a forma de pagamento",
+    );
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("nao grava nada quando a forma ja e a mesma", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await service.alterarFormaPagamento("ped-1", { formaPagamento: "A_VISTA" });
+
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("retorna nao encontrado para pedido de outra organizacao", async () => {
+    prisma.pedido.findUnique.mockResolvedValue(null);
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.alterarFormaPagamento("ped-x", { formaPagamento: "EM_CONTA" })).rejects.toThrow(
+      PedidoNaoEncontradoError,
+    );
+  });
+});
