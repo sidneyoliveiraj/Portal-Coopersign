@@ -59,7 +59,6 @@ export function formatarMomento(valor: string) {
 }
 
 export const STATUS_PEDIDO: Record<string, { rotulo: string; cor: string }> = {
-  RASCUNHO: { rotulo: "Rascunho", cor: "gray" },
   AGUARDANDO_VALIDACAO: { rotulo: "Aguardando validação", cor: "yellow" },
   NA_FILA: { rotulo: "Na fila", cor: "indigo" },
   EM_PRODUCAO: { rotulo: "Em produção", cor: "blue" },

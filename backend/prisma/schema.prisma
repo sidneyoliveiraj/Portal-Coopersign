@@ -118,7 +118,6 @@ model ServicoAdicional {
 }
 
 enum StatusPedido {
-  RASCUNHO
   AGUARDANDO_VALIDACAO
   NA_FILA
   EM_PRODUCAO
@@ -139,7 +138,7 @@ model Pedido {
   clienteId      String         @map("cliente_id")
   materialId     String         @map("material_id")
   maquinaId      String?        @map("maquina_id")
-  status         StatusPedido   @default(RASCUNHO)
+  status         StatusPedido   @default(AGUARDANDO_VALIDACAO)
   largura        Decimal        @db.Decimal(10, 3)
   altura         Decimal        @db.Decimal(10, 3)
   quantidade     Int
