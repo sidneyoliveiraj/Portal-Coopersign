@@ -17,6 +17,7 @@ import { api } from "../api";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import { FormRetrabalho } from "../components/FormRetrabalho";
+import { ReferenciaArquivo } from "../components/ReferenciaArquivo";
 import type { Maquina, Pedido } from "../tipos";
 import { formatarArea, formatarData, formatarMedidas, formatarMomento, STATUS_PEDIDO } from "../formato";
 
@@ -151,6 +152,7 @@ export function FilaPage() {
               <Table.Th>Cliente</Table.Th>
               <Table.Th>Material</Table.Th>
               <Table.Th>Medidas</Table.Th>
+              <Table.Th>Arquivo</Table.Th>
               <Table.Th ta="right">Metragem</Table.Th>
               <Table.Th>Entrada</Table.Th>
               <Table.Th>Prazo</Table.Th>
@@ -181,6 +183,9 @@ export function FilaPage() {
                   </Table.Td>
                   <Table.Td>{pedido.material.tipo}</Table.Td>
                   <Table.Td>{formatarMedidas(pedido)}</Table.Td>
+                  <Table.Td maw={220}>
+                    <ReferenciaArquivo referencia={pedido.arquivoUrl} compacto />
+                  </Table.Td>
                   <Table.Td ta="right">{formatarArea(pedido.metragemTotal)}</Table.Td>
                   <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
                   <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
