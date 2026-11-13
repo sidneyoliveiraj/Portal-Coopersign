@@ -68,6 +68,39 @@ export const STATUS_PEDIDO: Record<string, { rotulo: string; cor: string }> = {
   REJEITADO: { rotulo: "Rejeitado", cor: "red" },
 };
 
+export type AtalhoPeriodo = "mes" | "mesPassado" | "ano";
+
+function ultimoDiaDoMes(ano: number, mes: number) {
+  return new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+}
+
+// Atalhos do relatório: "hoje" no formato AAAA-MM-DD, devolve o período pronto para a API.
+export function periodoDoAtalho(atalho: AtalhoPeriodo, hoje: string): { inicio: string; fim: string } {
+  const [ano, mes] = hoje.split("-").map(Number);
+  if (atalho === "ano") {
+    return { inicio: `${ano}-01-01`, fim: hoje };
+  }
+  if (atalho === "mesPassado") {
+    const anoPassado = mes === 1 ? ano - 1 : ano;
+    const mesPassado = mes === 1 ? 12 : mes - 1;
+    const prefixo = `${anoPassado}-${String(mesPassado).padStart(2, "0")}`;
+    return { inicio: `${prefixo}-01`, fim: `${prefixo}-${ultimoDiaDoMes(anoPassado, mesPassado)}` };
+  }
+  return { inicio: `${hoje.slice(0, 7)}-01`, fim: hoje };
+}
+
+const MESES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+// "2026-10" → "Outubro/2026" (tabela) ou "out/26" (eixo do gráfico)
+export function nomeDoMes(mes: string, curto = false) {
+  const [ano, numero] = mes.split("-").map(Number);
+  const nome = MESES[numero - 1];
+  return curto ? `${nome.slice(0, 3).toLowerCase()}/${String(ano).slice(2)}` : `${nome}/${ano}`;
+}
+
 // A referência do arquivo pode ser um link ou um texto livre ("WhatsApp do Charles").
 export function ehLink(referencia: string) {
   return /^https?:\/\/\S+$/i.test(referencia.trim());

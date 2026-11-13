@@ -1,6 +1,7 @@
 import { PrismaTenantClient } from "../lib/prisma-tenant";
 import { clienteRepository } from "../repositories/cliente.repository";
 import { faturamentoRepository, Periodo } from "../repositories/faturamento.repository";
+import { calcularMetragemCobrada } from "./pedido-calculo.service";
 
 export class FaturamentoInvalidoError extends Error {
   constructor(mensagem: string) {
@@ -38,6 +39,73 @@ function periodo(dados: Record<string, unknown>): Periodo {
 
 function somarValores(pedidos: { valorTotal: unknown }[]): number {
   return arredondar(pedidos.reduce((soma, pedido) => soma + Number(pedido.valorTotal), 0));
+}
+
+// "AAAA-MM" no horario de Brasilia: um pedido concluido em 31/10 as 22h e de outubro, nao de novembro.
+function mesNoBrasil(data: Date): string {
+  return new Date(data.getTime() - 3 * 3_600_000).toISOString().slice(0, 7);
+}
+
+function mesesDoPeriodo({ inicio, fim }: Periodo): string[] {
+  const meses: string[] = [];
+  let [ano, mes] = mesNoBrasil(inicio).split("-").map(Number);
+  const ultimo = mesNoBrasil(fim);
+  for (;;) {
+    const atual = `${ano}-${String(mes).padStart(2, "0")}`;
+    meses.push(atual);
+    if (atual >= ultimo) {
+      return meses;
+    }
+    mes = mes === 12 ? 1 : mes + 1;
+    ano = mes === 1 ? ano + 1 : ano;
+  }
+}
+
+type PedidoConcluido = {
+  concluidoEm: Date | null;
+  valorTotal: unknown;
+  metragemTotal: unknown;
+  largura: unknown;
+  altura: unknown;
+  quantidade: number;
+};
+
+// Relatorio mes a mes (RF25): pedidos, m2 rodados (real), m2 cobrados (RN16) e receita.
+// Meses sem pedido aparecem zerados, como na planilha do gestor.
+export function resumoPorMes(pedidos: PedidoConcluido[], intervalo: Periodo) {
+  const meses = new Map(
+    mesesDoPeriodo(intervalo).map((mes) => [mes, { mes, pedidos: 0, metragem: 0, metragemCobrada: 0, receita: 0 }]),
+  );
+  for (const pedido of pedidos) {
+    const linha = pedido.concluidoEm && meses.get(mesNoBrasil(pedido.concluidoEm));
+    if (!linha) {
+      continue;
+    }
+    linha.pedidos += 1;
+    linha.metragem += Number(pedido.metragemTotal);
+    linha.metragemCobrada += calcularMetragemCobrada(
+      Number(pedido.largura),
+      Number(pedido.altura),
+      pedido.quantidade,
+    );
+    linha.receita += Number(pedido.valorTotal);
+  }
+  const linhas = [...meses.values()].map((linha) => ({
+    ...linha,
+    metragem: arredondar(linha.metragem),
+    metragemCobrada: arredondar(linha.metragemCobrada),
+    receita: arredondar(linha.receita),
+  }));
+  const total = linhas.reduce(
+    (soma, linha) => ({
+      pedidos: soma.pedidos + linha.pedidos,
+      metragem: arredondar(soma.metragem + linha.metragem),
+      metragemCobrada: arredondar(soma.metragemCobrada + linha.metragemCobrada),
+      receita: arredondar(soma.receita + linha.receita),
+    }),
+    { pedidos: 0, metragem: 0, metragemCobrada: 0, receita: 0 },
+  );
+  return { meses: linhas, total };
 }
 
 export function faturamentoService(prisma: PrismaTenantClient) {
@@ -145,6 +213,7 @@ export function faturamentoService(prisma: PrismaTenantClient) {
       tempoMedioHoras,
       custoRetrabalho: arredondar(retrabalhos.reduce((soma, r) => soma + r.custo, 0)),
       retrabalhos,
+      porMes: resumoPorMes(concluidos, intervalo),
       pedidos: concluidos,
     };
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { faturamentoService, FaturamentoInvalidoError } from "./faturamento.service";
+import { faturamentoService, FaturamentoInvalidoError, resumoPorMes } from "./faturamento.service";
 import { PrismaTenantClient } from "../lib/prisma-tenant";
 
 const periodoValido = { inicio: "2026-11-01", fim: "2026-11-30" };
@@ -122,6 +122,9 @@ describe("faturamentoService", () => {
           {
             valorTotal: "100",
             metragemTotal: "2",
+            largura: "2",
+            altura: "1",
+            quantidade: 1,
             material: { tipo: "Lona" },
             formaPagamento: "A_VISTA",
             maquina: { nome: "Roland" },
@@ -131,6 +134,9 @@ describe("faturamentoService", () => {
           {
             valorTotal: "50.5",
             metragemTotal: "1",
+            largura: "1",
+            altura: "1",
+            quantidade: 1,
             material: { tipo: "Lona" },
             formaPagamento: "EM_CONTA",
             maquina: { nome: "Roland" },
@@ -201,6 +207,52 @@ describe("faturamentoService", () => {
 
       expect(resultado.taxaRetrabalho).toBeNull();
       expect(resultado.tempoMedioHoras).toBeNull();
+    });
+
+    it("traz o resumo mes a mes junto dos indicadores", async () => {
+      const { porMes } = await service.indicadores(periodoValido);
+
+      expect(porMes.meses).toEqual([{ mes: "2026-11", pedidos: 0, metragem: 0, metragemCobrada: 0, receita: 0 }]);
+    });
+  });
+
+  describe("resumoPorMes (relatorio mensal, RF25)", () => {
+    const ano = { inicio: new Date("2026-01-01T03:00:00Z"), fim: new Date("2026-03-31T02:59:59.999Z") };
+    const pedido = (concluidoEm: string, valorTotal: string, largura: string, altura: string, quantidade = 1) => ({
+      concluidoEm: new Date(concluidoEm),
+      valorTotal,
+      metragemTotal: String(Number(largura) * Number(altura) * quantidade),
+      largura,
+      altura,
+      quantidade,
+    });
+
+    it("lista todos os meses do periodo, mesmo sem pedido, e soma o total", () => {
+      const { meses, total } = resumoPorMes(
+        [pedido("2026-01-10T15:00:00Z", "29", "1.04", "0.935"), pedido("2026-03-05T15:00:00Z", "116", "1.1", "0.8", 4)],
+        ano,
+      );
+
+      expect(meses).toEqual([
+        { mes: "2026-01", pedidos: 1, metragem: 0.97, metragemCobrada: 1, receita: 29 },
+        { mes: "2026-02", pedidos: 0, metragem: 0, metragemCobrada: 0, receita: 0 },
+        { mes: "2026-03", pedidos: 1, metragem: 3.52, metragemCobrada: 4, receita: 116 },
+      ]);
+      expect(total).toEqual({ pedidos: 2, metragem: 4.49, metragemCobrada: 5, receita: 145 });
+    });
+
+    it("usa o horario de Brasilia para decidir o mes", () => {
+      // 01/02 as 01h UTC ainda e 31/01 as 22h em Brasilia
+      const { meses } = resumoPorMes([pedido("2026-02-01T01:00:00Z", "50", "2", "1")], ano);
+
+      expect(meses[0]).toMatchObject({ mes: "2026-01", pedidos: 1, receita: 50 });
+      expect(meses[1].pedidos).toBe(0);
+    });
+
+    it("atravessa a virada do ano", () => {
+      const periodo = { inicio: new Date("2025-11-01T03:00:00Z"), fim: new Date("2026-02-28T03:00:00Z") };
+
+      expect(resumoPorMes([], periodo).meses.map((m) => m.mes)).toEqual(["2025-11", "2025-12", "2026-01", "2026-02"]);
     });
   });
 });
