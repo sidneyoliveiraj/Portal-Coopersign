@@ -83,7 +83,8 @@ export function App() {
           </>
         )}
       </Route>
-      <Route path="*" element={<Navigate to="/pedidos" replace />} />
+      {/* RFC 4.1: o gestor entra pelo painel (Relatórios); o operador, pelos pedidos. */}
+      <Route path="*" element={<Navigate to={podeCriar ? "/relatorios" : "/pedidos"} replace />} />
     </Routes>
   );
 }

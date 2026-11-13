@@ -19,7 +19,8 @@ export function LoginPage() {
     setEnviando(true);
     try {
       await entrar(email, senha);
-      navigate("/pedidos");
+      // A página inicial de cada perfil é decidida no App.tsx.
+      navigate("/");
     } catch (e) {
       setErro(
         e instanceof ErroApi && e.status === 403
