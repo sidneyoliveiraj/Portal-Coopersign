@@ -5,10 +5,9 @@ export type FiltroPedidos = {
   clienteId: string | null;
   inicio: string; // AAAA-MM-DD, data de entrada (vazio = sem limite)
   fim: string;
-  teveRetrabalho: boolean;
 };
 
-export const FILTRO_VAZIO: FiltroPedidos = { status: [], clienteId: null, inicio: "", fim: "", teveRetrabalho: false };
+export const FILTRO_VAZIO: FiltroPedidos = { status: [], clienteId: null, inicio: "", fim: "" };
 
 export function teveRetrabalho(pedido: Pedido) {
   return (pedido._count?.retrabalhos ?? 0) > 0;
@@ -21,13 +20,13 @@ export function diaLocal(momento: string) {
 
 export function filtrarPedidos(pedidos: Pedido[], filtro: FiltroPedidos) {
   return pedidos.filter((pedido) => {
-    if (filtro.status.length > 0 && !filtro.status.includes(pedido.status)) {
+    // "Retrabalho" no filtro acha quem teve retrabalho, mesmo que ja tenha sido refeito e entregue.
+    const statusBate =
+      filtro.status.includes(pedido.status) || (filtro.status.includes("RETRABALHO") && teveRetrabalho(pedido));
+    if (filtro.status.length > 0 && !statusBate) {
       return false;
     }
     if (filtro.clienteId && pedido.cliente.id !== filtro.clienteId) {
-      return false;
-    }
-    if (filtro.teveRetrabalho && !teveRetrabalho(pedido)) {
       return false;
     }
     const dia = diaLocal(pedido.criadoEm);
@@ -42,11 +41,5 @@ export function filtrarPedidos(pedidos: Pedido[], filtro: FiltroPedidos) {
 }
 
 export function filtroAtivo(filtro: FiltroPedidos) {
-  return (
-    filtro.status.length > 0 ||
-    filtro.clienteId !== null ||
-    filtro.inicio !== "" ||
-    filtro.fim !== "" ||
-    filtro.teveRetrabalho
-  );
+  return filtro.status.length > 0 || filtro.clienteId !== null || filtro.inicio !== "" || filtro.fim !== "";
 }

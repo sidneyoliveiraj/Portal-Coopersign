@@ -4,7 +4,6 @@ import {
   Alert,
   Badge,
   Button,
-  Checkbox,
   Group,
   Loader,
   MultiSelect,
@@ -102,16 +101,9 @@ export function PedidosPage() {
             />
           </SimpleGrid>
           <Group justify="space-between" mt="sm">
-            <Group gap="lg">
-              <Checkbox
-                label="Teve retrabalho"
-                checked={filtro.teveRetrabalho}
-                onChange={(e) => alterarFiltro({ teveRetrabalho: e.currentTarget.checked })}
-              />
-              <Text size="sm" c="dimmed">
-                {visiveis.length} de {pedidos.length} pedido(s)
-              </Text>
-            </Group>
+            <Text size="sm" c="dimmed">
+              {visiveis.length} de {pedidos.length} pedido(s)
+            </Text>
             {filtroAtivo(filtro) && (
               <Button variant="subtle" size="xs" onClick={() => setFiltro(FILTRO_VAZIO)}>
                 Limpar filtros
