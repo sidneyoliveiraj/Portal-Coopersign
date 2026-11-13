@@ -155,7 +155,7 @@ export function FaturamentoPage() {
                 trocarFiltro(() => setFim(valor));
               }}
             />
-            <Button type="submit">{clienteId ? "Ver conta" : "Ver quem deve"}</Button>
+            <Button type="submit">{clienteId ? "Ver conta" : "Buscar contas em aberto"}</Button>
           </Group>
         </form>
       </Paper>

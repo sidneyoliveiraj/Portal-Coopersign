@@ -152,7 +152,7 @@ export function PedidosPage() {
                       </Badge>
                       {teveRetrabalho(pedido) && pedido.status !== "RETRABALHO" && (
                         <Badge color="orange" variant="outline" title="Este pedido já teve retrabalho">
-                          Teve retrabalho
+                          Retrabalho
                         </Badge>
                       )}
                     </Group>
