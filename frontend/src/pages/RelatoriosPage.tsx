@@ -77,21 +77,23 @@ const ATALHOS = [
 
 function Indicador({ rotulo, valor, detalhe }: { rotulo: string; valor: string; detalhe?: string }) {
   return (
-    <Paper withBorder p="md" radius="md">
+    <Paper withBorder p="md" radius="md" h="100%" style={{ display: "flex", flexDirection: "column" }}>
       <Text size="xs" c="dimmed">
         {rotulo}
       </Text>
       <Text size="xl" fw={700} c="coopersign.7">
         {valor}
       </Text>
-      <Text size="xs" c="dimmed" h={18}>
+      <Text size="xs" c="dimmed" mih={18}>
         {detalhe}
       </Text>
-      <Box
-        mt="xs"
-        h={3}
-        style={{ borderRadius: 2, background: `linear-gradient(90deg, ${AZUL_COOPERSIGN}, ${AMARELO_COOPERSIGN})` }}
-      />
+      {/* mt="auto" empurra a faixa para o pé do cartão, mesmo quando o detalhe ocupa duas linhas */}
+      <Box mt="auto" pt="xs">
+        <Box
+          h={3}
+          style={{ borderRadius: 2, background: `linear-gradient(90deg, ${AZUL_COOPERSIGN}, ${AMARELO_COOPERSIGN})` }}
+        />
+      </Box>
     </Paper>
   );
 }
@@ -234,7 +236,7 @@ export function RelatoriosPage() {
             <Indicador
               rotulo="Taxa de retrabalho"
               valor={dados.taxaRetrabalho === null ? "—" : `${dados.taxaRetrabalho.toLocaleString("pt-BR")}%`}
-              detalhe="Retrabalhos por pedido concluído"
+              detalhe="Por pedido concluído"
             />
             <Indicador
               rotulo="Tempo médio de produção"
