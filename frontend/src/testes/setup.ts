@@ -6,6 +6,7 @@ import { cleanup } from "@testing-library/react";
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  localStorage.clear();
 });
 
 // O jsdom não tem estas APIs do navegador; o Mantine e os gráficos (recharts) usam.
