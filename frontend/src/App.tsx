@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Center, Loader } from "@mantine/core";
 import { useAuth } from "./auth";
 import { Layout } from "./components/Layout";
@@ -15,10 +15,18 @@ import { CadastroClientePage } from "./pages/CadastroClientePage";
 import { MeusPedidosPage } from "./pages/MeusPedidosPage";
 import { MeuPedidoPage } from "./pages/MeuPedidoPage";
 import { ContasClientesPage } from "./pages/ContasClientesPage";
+import { DefinirSenhaPage } from "./pages/DefinirSenhaPage";
+import { EsqueciSenhaPage } from "./pages/EsqueciSenhaPage";
 import { ClientesPage, MaquinasPage, MateriaisPage, ServicosPage, UsuariosPage } from "./pages/CadastrosPages";
 
 export function App() {
   const { usuario, carregando } = useAuth();
+  const { pathname } = useLocation();
+
+  // O link de senha abre mesmo com alguém logado no navegador.
+  if (pathname === "/definir-senha") {
+    return <DefinirSenhaPage />;
+  }
 
   if (carregando) {
     return (
@@ -33,6 +41,7 @@ export function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cadastro" element={<CadastroClientePage />} />
+        <Route path="/esqueci-senha" element={<EsqueciSenhaPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );

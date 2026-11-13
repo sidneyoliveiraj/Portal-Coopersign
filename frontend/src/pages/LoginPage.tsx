@@ -62,6 +62,9 @@ export function LoginPage() {
             <Button type="submit" loading={enviando}>
               Entrar
             </Button>
+            <Anchor component={Link} to="/esqueci-senha" size="sm">
+              Esqueci minha senha
+            </Anchor>
             <Anchor component={Link} to="/cadastro" size="sm">
               Sou cliente e quero criar uma conta
             </Anchor>

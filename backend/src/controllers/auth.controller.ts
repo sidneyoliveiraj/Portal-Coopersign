@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { compararSenha, gerarToken } from "../services/auth.service";
 import { cadastrarCliente, CadastroInvalidoError } from "../services/cadastro-cliente.service";
+import { AcessoInvalidoError, consultarLink, definirSenha, pedirRecuperacao } from "../services/acesso.service";
 
 export async function loginController(req: Request, res: Response) {
   const { email, senha, organizacaoId } = req.body;
@@ -73,4 +74,37 @@ export async function cadastroClienteController(req: Request, res: Response) {
 
 export function meController(req: Request, res: Response) {
   return res.status(200).json({ usuario: req.usuario });
+}
+
+function responderErroAcesso(erro: unknown, res: Response) {
+  if (erro instanceof AcessoInvalidoError) {
+    return res.status(400).json({ erro: erro.message });
+  }
+  throw erro;
+}
+
+export async function consultarLinkController(req: Request, res: Response) {
+  try {
+    return res.status(200).json(await consultarLink(req.query.token));
+  } catch (erro) {
+    return responderErroAcesso(erro, res);
+  }
+}
+
+export async function definirSenhaController(req: Request, res: Response) {
+  try {
+    await definirSenha(req.body ?? {});
+    return res.status(200).json({ mensagem: "senha definida" });
+  } catch (erro) {
+    return responderErroAcesso(erro, res);
+  }
+}
+
+export async function esqueciSenhaController(req: Request, res: Response) {
+  try {
+    await pedirRecuperacao(req.body ?? {}, process.env.APP_URL ?? "http://localhost:5173");
+    return res.status(200).json({ mensagem: "se o e-mail estiver cadastrado, o link foi enviado" });
+  } catch (erro) {
+    return responderErroAcesso(erro, res);
+  }
 }

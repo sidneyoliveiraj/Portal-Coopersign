@@ -43,6 +43,7 @@ type Props = {
   campos: CampoCadastro[];
   colunas: ColunaCadastro[];
   podeRemover?: boolean;
+  acaoExtra?: (item: Item) => ReactNode;
 };
 
 type Valores = Record<string, string | number>;
@@ -59,7 +60,16 @@ function valorDoCampo(campo: CampoCadastro, valor: string | number) {
   return valor === "" && !campo.obrigatorio ? null : valor;
 }
 
-export function CadastroPage({ titulo, singular, caminho, chaveLista, campos, colunas, podeRemover = true }: Props) {
+export function CadastroPage({
+  titulo,
+  singular,
+  caminho,
+  chaveLista,
+  campos,
+  colunas,
+  podeRemover = true,
+  acaoExtra,
+}: Props) {
   const confirmar = useConfirmacao();
   const [itens, setItens] = useState<Item[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -202,7 +212,7 @@ export function CadastroPage({ titulo, singular, caminho, chaveLista, campos, co
                   {coluna.rotulo}
                 </Table.Th>
               ))}
-              <Table.Th w={190}>Ações</Table.Th>
+              <Table.Th w={acaoExtra ? 320 : 190}>Ações</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -223,6 +233,7 @@ export function CadastroPage({ titulo, singular, caminho, chaveLista, campos, co
                         Remover
                       </Button>
                     )}
+                    {acaoExtra?.(item)}
                   </Group>
                 </Table.Td>
               </Table.Tr>

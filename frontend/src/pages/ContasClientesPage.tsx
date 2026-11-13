@@ -6,7 +6,6 @@ import {
   Group,
   Loader,
   Modal,
-  PasswordInput,
   Select,
   Stack,
   Table,
@@ -16,6 +15,7 @@ import {
 } from "@mantine/core";
 import { api } from "../api";
 import type { Cliente } from "../tipos";
+import { LinkAcessoModal } from "../components/LinkAcesso";
 
 type Conta = {
   id: string;
@@ -32,7 +32,7 @@ export function ContasClientesPage() {
   const [aberto, setAberto] = useState(false);
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const [link, setLink] = useState<{ titulo: string; explicacao: string; token: string } | null>(null);
   const [erroForm, setErroForm] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -62,7 +62,6 @@ export function ContasClientesPage() {
   function abrir() {
     setClienteId(null);
     setEmail("");
-    setSenha("");
     setErroForm(null);
     setAberto(true);
   }
@@ -72,13 +71,35 @@ export function ContasClientesPage() {
     setErroForm(null);
     setSalvando(true);
     try {
-      await api("/usuarios/clientes", { metodo: "POST", corpo: { clienteId, email, senha } });
+      const { tokenConvite } = await api<{ tokenConvite: string }>("/usuarios/clientes", {
+        metodo: "POST",
+        corpo: { clienteId, email },
+      });
       setAberto(false);
+      setLink({
+        titulo: "Convite criado",
+        explicacao: "Mande este link para o cliente (WhatsApp ou e-mail). Ele abre o link e cria a própria senha. Vale por 7 dias.",
+        token: tokenConvite,
+      });
       await carregar();
     } catch (e) {
       setErroForm(e instanceof Error ? e.message : "erro ao criar a conta");
     } finally {
       setSalvando(false);
+    }
+  }
+
+  async function gerarLinkSenha(conta: Conta) {
+    setErro(null);
+    try {
+      const { token } = await api<{ token: string }>(`/usuarios/${conta.id}/link-senha`, { metodo: "POST" });
+      setLink({
+        titulo: `Nova senha: ${conta.cliente?.nome ?? conta.nome}`,
+        explicacao: "Mande este link para o cliente criar uma nova senha. Vale por 24 horas.",
+        token,
+      });
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "erro ao gerar o link");
     }
   }
 
@@ -104,7 +125,7 @@ export function ContasClientesPage() {
               <Table.Th>Cliente</Table.Th>
               <Table.Th>E-mail</Table.Th>
               <Table.Th>Situação</Table.Th>
-              <Table.Th w={130}>Ações</Table.Th>
+              <Table.Th w={260}>Ações</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -118,6 +139,7 @@ export function ContasClientesPage() {
                   </Badge>
                 </Table.Td>
                 <Table.Td>
+                  <Group gap="xs">
                   {conta.ativo ? (
                     <Button
                       size="xs"
@@ -131,6 +153,10 @@ export function ContasClientesPage() {
                       Aprovar
                     </Button>
                   )}
+                  <Button size="xs" variant="subtle" onClick={() => gerarLinkSenha(conta)}>
+                    Link de nova senha
+                  </Button>
+                  </Group>
                 </Table.Td>
               </Table.Tr>
             ))}
@@ -158,13 +184,9 @@ export function ContasClientesPage() {
               value={email}
               onChange={(e) => setEmail(e.currentTarget.value)}
             />
-            <PasswordInput
-              label="Senha inicial"
-              description="Pelo menos 6 caracteres"
-              required
-              value={senha}
-              onChange={(e) => setSenha(e.currentTarget.value)}
-            />
+            <Text size="xs" c="dimmed">
+              O sistema gera um link de convite para o cliente criar a própria senha.
+            </Text>
             <Group justify="flex-end">
               <Button type="submit" loading={salvando} disabled={!clienteId}>
                 Criar acesso
@@ -173,6 +195,8 @@ export function ContasClientesPage() {
           </Stack>
         </form>
       </Modal>
+
+      {link && <LinkAcessoModal {...link} aoFechar={() => setLink(null)} />}
     </>
   );
 }

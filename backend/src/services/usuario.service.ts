@@ -2,6 +2,8 @@ import { PrismaTenantClient } from "../lib/prisma-tenant";
 import { clienteRepository } from "../repositories/cliente.repository";
 import { usuarioRepository, UsuarioAtualizarInput } from "../repositories/usuario.repository";
 import { hashSenha } from "./auth.service";
+import { gerarLink } from "./acesso.service";
+import { randomBytes } from "node:crypto";
 
 export class UsuarioNaoEncontradoError extends Error {
   constructor() {
@@ -76,13 +78,35 @@ export function usuarioService(prisma: PrismaTenantClient) {
     return repository.criar({ nome, perfil, ...(await credenciais(dados)) });
   }
 
+  // RF35: sem senha, a conta nasce com uma senha aleatoria que ninguem conhece
+  // e o gestor recebe o link de convite para o cliente criar a propria.
   async function criarContaCliente(dados: Record<string, unknown>) {
     const clienteId = texto(dados.clienteId, "clienteId");
     const cliente = await clientes.buscarPorId(clienteId);
     if (!cliente) {
       throw new UsuarioInvalidoError("cliente nao encontrado");
     }
-    return repository.criar({ nome: cliente.nome, perfil: "CLIENTE", clienteId, ...(await credenciais(dados)) });
+    const convite = dados.senha === undefined || dados.senha === null || dados.senha === "";
+    const acesso = convite ? { ...dados, senha: randomBytes(24).toString("base64url") } : dados;
+    const usuario = await repository.criar({
+      nome: cliente.nome,
+      perfil: "CLIENTE",
+      clienteId,
+      ...(await credenciais(acesso)),
+    });
+    const tokenConvite = convite ? await gerarLink(prisma, usuario.id, "CONVITE") : null;
+    return { usuario, tokenConvite };
+  }
+
+  async function gerarLinkSenha(id: string, autor: Autor) {
+    const usuario = await repository.buscarPorId(id);
+    if (!usuario) {
+      throw new UsuarioNaoEncontradoError();
+    }
+    if (usuario.perfil === "ADMINISTRADOR" && autor.perfil !== "ADMINISTRADOR") {
+      throw new UsuarioSemPermissaoError("apenas administrador pode gerar link para outro administrador");
+    }
+    return gerarLink(prisma, id, "RECUPERACAO");
   }
 
   async function aprovarCliente(id: string) {
@@ -122,5 +146,5 @@ export function usuarioService(prisma: PrismaTenantClient) {
     return repository.atualizar(id, alteracoes);
   }
 
-  return { listar, listarContasClientes, criar, criarContaCliente, aprovarCliente, atualizar };
+  return { listar, listarContasClientes, criar, criarContaCliente, gerarLinkSenha, aprovarCliente, atualizar };
 }

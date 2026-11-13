@@ -7,6 +7,7 @@ const MODELOS_MULTI_TENANT = new Set([
   "Material",
   "ServicoAdicional",
   "Pedido",
+  "TokenAcesso",
 ]);
 
 const OPERACOES_COM_WHERE = [

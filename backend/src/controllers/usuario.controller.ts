@@ -31,8 +31,8 @@ export async function listarContasClientesController(req: Request, res: Response
 
 export async function criarContaClienteController(req: Request, res: Response) {
   try {
-    const usuario = await usuarioService(req.prisma!).criarContaCliente(req.body ?? {});
-    return res.status(201).json({ usuario });
+    const { usuario, tokenConvite } = await usuarioService(req.prisma!).criarContaCliente(req.body ?? {});
+    return res.status(201).json({ usuario, tokenConvite });
   } catch (erro) {
     return responderErro(erro, res);
   }
@@ -60,6 +60,15 @@ export async function atualizarUsuarioController(req: Request, res: Response) {
   try {
     const usuario = await usuarioService(req.prisma!).atualizar(req.params.id as string, req.body ?? {}, req.usuario!);
     return res.status(200).json({ usuario });
+  } catch (erro) {
+    return responderErro(erro, res);
+  }
+}
+
+export async function gerarLinkSenhaController(req: Request, res: Response) {
+  try {
+    const token = await usuarioService(req.prisma!).gerarLinkSenha(req.params.id as string, req.usuario!);
+    return res.status(201).json({ token });
   } catch (erro) {
     return responderErro(erro, res);
   }

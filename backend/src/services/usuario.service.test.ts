@@ -21,6 +21,7 @@ function criarPrismaFalso() {
       create: vi.fn().mockResolvedValue({ id: "usu-1" }),
       update: vi.fn().mockResolvedValue({ id: "usu-1" }),
     },
+    tokenAcesso: { create: vi.fn() },
   };
 }
 
@@ -84,6 +85,43 @@ describe("usuarioService", () => {
       perfil: "CLIENTE",
       clienteId: "cli-1",
     });
+  });
+
+  it("sem senha, cria a conta e devolve o link de convite (RF35)", async () => {
+    const { tokenConvite } = await service.criarContaCliente({ clienteId: "cli-1", email: "c@x.dev" });
+
+    expect(tokenConvite).toMatch(/^[\w-]{40,}$/);
+    const dados = prisma.usuario.create.mock.calls[0][0].data;
+    expect(dados.senhaHash).toEqual(expect.any(String));
+    const convite = prisma.tokenAcesso.create.mock.calls[0][0].data;
+    expect(convite).toMatchObject({ usuarioId: "usu-1", tipo: "CONVITE" });
+    expect(convite.tokenHash).not.toBe(tokenConvite);
+  });
+
+  it("com senha informada, nao gera convite", async () => {
+    const { tokenConvite } = await service.criarContaCliente({ clienteId: "cli-1", email: "c@x.dev", senha: "senha123" });
+
+    expect(tokenConvite).toBeNull();
+    expect(prisma.tokenAcesso.create).not.toHaveBeenCalled();
+  });
+
+  it("gestor gera link de nova senha para um usuario", async () => {
+    const token = await service.gerarLinkSenha("usu-1", gestor);
+
+    expect(token).toEqual(expect.any(String));
+    expect(prisma.tokenAcesso.create.mock.calls[0][0].data).toMatchObject({ usuarioId: "usu-1", tipo: "RECUPERACAO" });
+  });
+
+  it("gestor nao gera link para administrador", async () => {
+    prisma.usuario.findUnique.mockResolvedValue({ id: "adm-2", perfil: "ADMINISTRADOR", ativo: true });
+
+    await expect(service.gerarLinkSenha("adm-2", gestor)).rejects.toThrow(UsuarioSemPermissaoError);
+  });
+
+  it("link de nova senha para usuario de outra organizacao da nao encontrado", async () => {
+    prisma.usuario.findUnique.mockResolvedValue(null);
+
+    await expect(service.gerarLinkSenha("usu-x", admin)).rejects.toThrow(UsuarioNaoEncontradoError);
   });
 
   it("nao cria conta para cliente de outra organizacao", async () => {

@@ -23,6 +23,7 @@ model Organizacao {
   materiais Material[]
   servicosAdicionais ServicoAdicional[]
   pedidos            Pedido[]
+  tokensAcesso       TokenAcesso[]
 
   @@map("organizacao")
 }
@@ -45,11 +46,34 @@ model Usuario {
   clienteId     String?  @map("cliente_id")
   criadoEm      DateTime @default(now()) @map("criado_em")
 
-  organizacao Organizacao @relation(fields: [organizacaoId], references: [id])
-  cliente     Cliente?    @relation(fields: [organizacaoId, clienteId], references: [organizacaoId, id], onDelete: Restrict)
+  organizacao  Organizacao   @relation(fields: [organizacaoId], references: [id])
+  cliente      Cliente?      @relation(fields: [organizacaoId, clienteId], references: [organizacaoId, id], onDelete: Restrict)
+  tokensAcesso TokenAcesso[]
 
   @@unique([organizacaoId, email])
   @@map("usuario")
+}
+
+enum TipoTokenAcesso {
+  CONVITE
+  RECUPERACAO
+}
+
+// Link de uso unico para criar ou trocar a senha. Guarda so o hash do token.
+model TokenAcesso {
+  id            String          @id @default(uuid())
+  organizacaoId String          @map("organizacao_id")
+  usuarioId     String          @map("usuario_id")
+  tipo          TipoTokenAcesso
+  tokenHash     String          @unique @map("token_hash")
+  expiraEm      DateTime        @map("expira_em")
+  usadoEm       DateTime?       @map("usado_em")
+  criadoEm      DateTime        @default(now()) @map("criado_em")
+
+  organizacao Organizacao @relation(fields: [organizacaoId], references: [id])
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+
+  @@map("token_acesso")
 }
 
 model Cliente {
