@@ -147,12 +147,14 @@ export function medidasDaImagem(imagem: Imagem, formato: string): MedidasArquivo
 async function medidasDoPdf(bytes: Uint8Array): Promise<MedidasArquivo> {
   const { PDFDocument } = await import("pdf-lib");
   let documento;
+  let pagina;
   try {
     documento = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false });
+    // Um PDF corrompido pode abrir e só falhar ao ler a página; os dois ficam no mesmo try.
+    pagina = documento.getPage(0);
   } catch {
     throw new ArquivoSemMedidasError("Não foi possível abrir este PDF. Digite as medidas.");
   }
-  const pagina = documento.getPage(0);
   // TrimBox é o tamanho final do impresso; sem ela, o pdf-lib devolve a MediaBox.
   const caixa = pagina.getTrimBox();
   const deitada = pagina.getRotation().angle % 180 !== 0;
