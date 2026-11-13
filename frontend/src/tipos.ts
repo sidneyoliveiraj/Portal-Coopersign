@@ -28,8 +28,8 @@ export type PedidoDoCliente = {
 export type Retrabalho = {
   id: string;
   motivo: string;
-  custoOperacional: string | null;
-  garantia: boolean;
+  custoOperacional: string;
+  statusOrigem: "CONCLUIDO" | "FATURADO";
   criadoEm: string;
 };
 
@@ -62,4 +62,5 @@ export type Pedido = {
   }[];
   ajustesValor?: AjusteValor[];
   retrabalhos?: Retrabalho[];
+  _count?: { retrabalhos: number };
 };

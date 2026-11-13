@@ -2,13 +2,13 @@ import { PrismaTenantClient } from "../lib/prisma-tenant";
 
 const dadosListagem = { cliente: true, material: true };
 
-export type StatusFila = "EM_PRODUCAO" | "CONCLUIDO";
+export type StatusFila = "NA_FILA" | "EM_PRODUCAO" | "CONCLUIDO";
 
 export type RetrabalhoInput = {
   pedidoId: string;
   motivo: string;
-  custoOperacional: number | null;
-  garantia: boolean;
+  custoOperacional: number;
+  statusOrigem: "CONCLUIDO" | "FATURADO";
 };
 
 export function filaRepository(prisma: PrismaTenantClient) {
@@ -23,7 +23,7 @@ export function filaRepository(prisma: PrismaTenantClient) {
 
     listarConcluidos(maquinaId: string) {
       return prisma.pedido.findMany({
-        where: { maquinaId, status: "CONCLUIDO" },
+        where: { maquinaId, status: { in: ["CONCLUIDO", "FATURADO"] } },
         include: dadosListagem,
         orderBy: { atualizadoEm: "desc" },
         take: 10,
@@ -34,10 +34,14 @@ export function filaRepository(prisma: PrismaTenantClient) {
       return prisma.pedido.update({ where: { id }, data: { status: "EM_PRODUCAO", iniciadoEm } });
     },
 
-    concluir(id: string) {
+    voltarParaFila(id: string, status: "NA_FILA" | "RETRABALHO", iniciadoEm: Date | null) {
+      return prisma.pedido.update({ where: { id }, data: { status, iniciadoEm } });
+    },
+
+    concluir(id: string, status: "CONCLUIDO" | "FATURADO", concluidoEm: Date) {
       return prisma.pedido.update({
         where: { id },
-        data: { status: "CONCLUIDO", posicaoFila: null, concluidoEm: new Date() },
+        data: { status, posicaoFila: null, concluidoEm },
       });
     },
 
@@ -50,7 +54,7 @@ export function filaRepository(prisma: PrismaTenantClient) {
     registrarRetrabalho(dados: RetrabalhoInput) {
       return prisma.$transaction([
         prisma.retrabalho.create({ data: dados }),
-        prisma.pedido.update({ where: { id: dados.pedidoId }, data: { status: "RETRABALHO" } }),
+        prisma.pedido.update({ where: { id: dados.pedidoId }, data: { status: "RETRABALHO", posicaoFila: null } }),
       ]);
     },
   };

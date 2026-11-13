@@ -4,6 +4,7 @@ import {
   Alert,
   Badge,
   Button,
+  Checkbox,
   Group,
   Loader,
   MultiSelect,
@@ -16,7 +17,7 @@ import {
   Title,
 } from "@mantine/core";
 import { api } from "../api";
-import { FILTRO_VAZIO, type FiltroPedidos, filtrarPedidos, filtroAtivo } from "../filtroPedidos";
+import { FILTRO_VAZIO, type FiltroPedidos, filtrarPedidos, filtroAtivo, teveRetrabalho } from "../filtroPedidos";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import type { Pedido } from "../tipos";
@@ -101,9 +102,16 @@ export function PedidosPage() {
             />
           </SimpleGrid>
           <Group justify="space-between" mt="sm">
-            <Text size="sm" c="dimmed">
-              {visiveis.length} de {pedidos.length} pedido(s)
-            </Text>
+            <Group gap="lg">
+              <Checkbox
+                label="Teve retrabalho"
+                checked={filtro.teveRetrabalho}
+                onChange={(e) => alterarFiltro({ teveRetrabalho: e.currentTarget.checked })}
+              />
+              <Text size="sm" c="dimmed">
+                {visiveis.length} de {pedidos.length} pedido(s)
+              </Text>
+            </Group>
             {filtroAtivo(filtro) && (
               <Button variant="subtle" size="xs" onClick={() => setFiltro(FILTRO_VAZIO)}>
                 Limpar filtros
@@ -146,9 +154,16 @@ export function PedidosPage() {
                   <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
                   <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
                   <Table.Td>
-                    <Badge color={status.cor} variant="light">
-                      {status.rotulo}
-                    </Badge>
+                    <Group gap={4} wrap="nowrap">
+                      <Badge color={status.cor} variant="light">
+                        {status.rotulo}
+                      </Badge>
+                      {teveRetrabalho(pedido) && pedido.status !== "RETRABALHO" && (
+                        <Badge color="orange" variant="outline" title="Este pedido já teve retrabalho">
+                          Teve retrabalho
+                        </Badge>
+                      )}
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
               );

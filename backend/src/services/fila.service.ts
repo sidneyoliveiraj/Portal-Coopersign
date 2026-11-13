@@ -6,9 +6,13 @@ import { MaquinaNaoEncontradaError } from "./maquina.service";
 import { PedidoInvalidoError, PedidoNaoEncontradoError } from "./pedido.service";
 
 const TRANSICOES: Record<StatusFila, string[]> = {
+  NA_FILA: ["EM_PRODUCAO"],
   EM_PRODUCAO: ["NA_FILA", "RETRABALHO"],
   CONCLUIDO: ["EM_PRODUCAO"],
 };
+
+const ORIGENS_RETRABALHO = ["CONCLUIDO", "FATURADO"] as const;
+type OrigemRetrabalho = (typeof ORIGENS_RETRABALHO)[number];
 
 export function filaService(prisma: PrismaTenantClient) {
   const repository = filaRepository(prisma);
@@ -38,7 +42,7 @@ export function filaService(prisma: PrismaTenantClient) {
     const status = dados.status as StatusFila;
     const origensPermitidas = Object.hasOwn(TRANSICOES, String(status)) ? TRANSICOES[status] : null;
     if (!origensPermitidas) {
-      throw new PedidoInvalidoError("status deve ser EM_PRODUCAO ou CONCLUIDO");
+      throw new PedidoInvalidoError("status deve ser NA_FILA, EM_PRODUCAO ou CONCLUIDO");
     }
 
     const pedido = await buscarPedido(id);
@@ -46,8 +50,23 @@ export function filaService(prisma: PrismaTenantClient) {
       throw new PedidoInvalidoError(`pedido em ${pedido.status} nao pode ir para ${status}`);
     }
 
-    if (status === "CONCLUIDO") {
-      await repository.concluir(id);
+    // concluidoEm preenchido indica que o pedido ja foi entregue uma vez e esta sendo refeito
+    const refazendo = pedido.concluidoEm !== null && pedido.concluidoEm !== undefined;
+
+    if (status === "NA_FILA") {
+      if (refazendo) {
+        await repository.voltarParaFila(id, "RETRABALHO", pedido.iniciadoEm);
+      } else {
+        await repository.voltarParaFila(id, "NA_FILA", null);
+      }
+    } else if (status === "CONCLUIDO") {
+      if (refazendo) {
+        const ultimo = pedido.retrabalhos?.at(-1);
+        const statusFinal: OrigemRetrabalho = ultimo?.statusOrigem === "FATURADO" ? "FATURADO" : "CONCLUIDO";
+        await repository.concluir(id, statusFinal, pedido.concluidoEm!);
+      } else {
+        await repository.concluir(id, "CONCLUIDO", new Date());
+      }
     } else {
       await repository.iniciarProducao(id, pedido.iniciadoEm ?? new Date());
     }
@@ -60,25 +79,23 @@ export function filaService(prisma: PrismaTenantClient) {
       throw new PedidoInvalidoError("motivo e obrigatorio");
     }
 
-    const garantia = dados.garantia === true;
     const custoInformado = dados.custoOperacional;
-    const semCusto = custoInformado === undefined || custoInformado === null || custoInformado === "";
-    if (semCusto && garantia) {
-      throw new PedidoInvalidoError("custoOperacional e obrigatorio em retrabalho de garantia");
-    }
-
-    const custoOperacional = semCusto ? null : Number(custoInformado);
-    if (custoOperacional !== null && (!Number.isFinite(custoOperacional) || custoOperacional < 0)) {
-      throw new PedidoInvalidoError("custoOperacional deve ser um numero maior ou igual a zero");
+    const custoOperacional =
+      custoInformado === undefined || custoInformado === null || custoInformado === "" ? NaN : Number(custoInformado);
+    if (!Number.isFinite(custoOperacional) || custoOperacional <= 0) {
+      throw new PedidoInvalidoError("custoOperacional e obrigatorio e deve ser maior que zero");
     }
 
     const pedido = await buscarPedido(id);
-    const origensPermitidas = garantia ? ["CONCLUIDO"] : ["EM_PRODUCAO", "CONCLUIDO"];
-    if (!origensPermitidas.includes(pedido.status)) {
-      throw new PedidoInvalidoError(`pedido em ${pedido.status} nao aceita este retrabalho`);
+    const statusOrigem = pedido.status as OrigemRetrabalho;
+    if (!ORIGENS_RETRABALHO.includes(statusOrigem)) {
+      throw new PedidoInvalidoError("so pedido concluido ou faturado aceita retrabalho");
+    }
+    if (!pedido.maquinaId) {
+      throw new PedidoInvalidoError("pedido nao tem maquina para voltar a fila");
     }
 
-    await repository.registrarRetrabalho({ pedidoId: id, motivo, custoOperacional, garantia });
+    await repository.registrarRetrabalho({ pedidoId: id, motivo, custoOperacional, statusOrigem });
     return buscarPedido(id);
   }
 

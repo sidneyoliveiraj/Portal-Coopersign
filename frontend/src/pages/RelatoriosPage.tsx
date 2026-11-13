@@ -5,7 +5,15 @@ import { api } from "../api";
 import type { Pedido } from "../tipos";
 import { FORMA_PAGAMENTO, formatarArea, formatarMoeda, formatarMomento, hojeIso, inicioDoMes } from "../formato";
 
-type ResumoRetrabalho = { quantidade: number; custoInformado: number; semCusto: number };
+type RetrabalhoDoPeriodo = {
+  id: string;
+  pedidoId: string;
+  data: string;
+  cliente: string;
+  material: string;
+  motivo: string;
+  custo: number;
+};
 
 type Indicadores = {
   receitaTotal: number;
@@ -15,8 +23,8 @@ type Indicadores = {
   pedidosPorMaterial: { material: string; quantidade: number; metragem: number }[];
   taxaRetrabalho: number | null;
   tempoMedioHoras: number | null;
-  retrabalhoProducao: ResumoRetrabalho;
-  retrabalhoGarantia: ResumoRetrabalho;
+  custoRetrabalho: number;
+  retrabalhos: RetrabalhoDoPeriodo[];
   pedidos: Pedido[];
 };
 
@@ -36,10 +44,6 @@ function Indicador({ rotulo, valor, detalhe }: { rotulo: string; valor: string; 
       )}
     </Paper>
   );
-}
-
-function descreverSemCusto({ semCusto }: ResumoRetrabalho) {
-  return semCusto > 0 ? `${semCusto} sem custo informado` : undefined;
 }
 
 export function RelatoriosPage() {
@@ -105,14 +109,9 @@ export function RelatoriosPage() {
               valor={dados.tempoMedioHoras === null ? "—" : `${dados.tempoMedioHoras.toLocaleString("pt-BR")} h`}
             />
             <Indicador
-              rotulo="Custo de retrabalho de produção"
-              valor={formatarMoeda(dados.retrabalhoProducao.custoInformado)}
-              detalhe={descreverSemCusto(dados.retrabalhoProducao)}
-            />
-            <Indicador
-              rotulo="Custo de retrabalho de garantia"
-              valor={formatarMoeda(dados.retrabalhoGarantia.custoInformado)}
-              detalhe={descreverSemCusto(dados.retrabalhoGarantia)}
+              rotulo="Gasto com retrabalho"
+              valor={formatarMoeda(dados.custoRetrabalho)}
+              detalhe={`${dados.retrabalhos.length} retrabalho(s) no período`}
             />
           </SimpleGrid>
 
@@ -158,6 +157,49 @@ export function RelatoriosPage() {
                 </Table.Tbody>
               </Table>
             </>
+          )}
+
+          <Title order={5} mb="xs">
+            Retrabalhos do período
+          </Title>
+          {dados.retrabalhos.length === 0 && (
+            <Text c="dimmed" mb="md">
+              Nenhum retrabalho neste período.
+            </Text>
+          )}
+          {dados.retrabalhos.length > 0 && (
+            <Table withTableBorder mb="md">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Data</Table.Th>
+                  <Table.Th>Cliente</Table.Th>
+                  <Table.Th>Material</Table.Th>
+                  <Table.Th>Motivo</Table.Th>
+                  <Table.Th ta="right">Custo</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {dados.retrabalhos.map((r) => (
+                  <Table.Tr key={r.id}>
+                    <Table.Td>{formatarMomento(r.data)}</Table.Td>
+                    <Table.Td>
+                      <Anchor component={Link} to={`/pedidos/${r.pedidoId}`} size="sm">
+                        {r.cliente}
+                      </Anchor>
+                    </Table.Td>
+                    <Table.Td>{r.material}</Table.Td>
+                    <Table.Td>{r.motivo}</Table.Td>
+                    <Table.Td ta="right">{formatarMoeda(r.custo)}</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+              <Table.Tfoot>
+                <Table.Tr>
+                  <Table.Th colSpan={4}>Total gasto com retrabalho</Table.Th>
+                  <Table.Th ta="right">{formatarMoeda(dados.custoRetrabalho)}</Table.Th>
+                </Table.Tr>
+              </Table.Tfoot>
+            </Table>
           )}
 
           <Title order={5} mb="xs">

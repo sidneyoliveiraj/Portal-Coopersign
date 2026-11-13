@@ -26,7 +26,7 @@ export function faturamentoRepository(prisma: PrismaTenantClient) {
 
     listarConcluidos({ inicio, fim }: Periodo) {
       return prisma.pedido.findMany({
-        where: { status: { in: ["CONCLUIDO", "FATURADO"] }, concluidoEm: { gte: inicio, lte: fim } },
+        where: { concluidoEm: { gte: inicio, lte: fim } },
         include: { cliente: true, material: true, maquina: true },
         orderBy: { concluidoEm: "desc" },
       });
@@ -36,7 +36,7 @@ export function faturamentoRepository(prisma: PrismaTenantClient) {
       const noPeriodo = { criadoEm: { gte: inicio, lte: fim } };
       return prisma.pedido.findMany({
         where: { retrabalhos: { some: noPeriodo } },
-        include: { retrabalhos: { where: noPeriodo } },
+        include: { cliente: true, material: true, retrabalhos: { where: noPeriodo } },
       });
     },
   };

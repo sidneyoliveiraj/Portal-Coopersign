@@ -112,10 +112,13 @@ describe("faturamentoService", () => {
         ])
         .mockResolvedValueOnce([
           {
+            id: "ped-9",
+            cliente: { nome: "Amais" },
+            material: { tipo: "Lona" },
             retrabalhos: [
-              { garantia: false, custoOperacional: null },
-              { garantia: false, custoOperacional: "30" },
-              { garantia: true, custoOperacional: "80" },
+              { id: "r-1", criadoEm: new Date("2026-11-03T10:00:00Z"), motivo: "lona rasgou", custoOperacional: "29" },
+              { id: "r-2", criadoEm: new Date("2026-11-10T10:00:00Z"), motivo: "cor errada", custoOperacional: "30.5" },
+              { id: "r-3", criadoEm: new Date("2026-11-05T10:00:00Z"), motivo: "descolou", custoOperacional: "80" },
             ],
           },
         ]);
@@ -127,8 +130,25 @@ describe("faturamentoService", () => {
       expect(resultado.pedidosPorMaquina).toEqual([{ maquina: "Roland", quantidade: 2 }]);
       expect(resultado.tempoMedioHoras).toBe(3);
       expect(resultado.taxaRetrabalho).toBe(150);
-      expect(resultado.retrabalhoProducao).toEqual({ quantidade: 2, custoInformado: 30, semCusto: 1 });
-      expect(resultado.retrabalhoGarantia).toEqual({ quantidade: 1, custoInformado: 80, semCusto: 0 });
+      expect(resultado.custoRetrabalho).toBe(139.5);
+      expect(resultado.retrabalhos.map((r) => r.id)).toEqual(["r-2", "r-3", "r-1"]);
+      expect(resultado.retrabalhos[0]).toEqual({
+        id: "r-2",
+        pedidoId: "ped-9",
+        data: new Date("2026-11-10T10:00:00Z"),
+        cliente: "Amais",
+        material: "Lona",
+        motivo: "cor errada",
+        custo: 30.5,
+      });
+    });
+
+    it("conta a receita pela data da primeira conclusao, mesmo com o pedido em retrabalho", async () => {
+      await service.indicadores(periodoValido);
+
+      expect(prisma.pedido.findMany.mock.calls[0][0].where).toEqual({
+        concluidoEm: { gte: expect.any(Date), lte: expect.any(Date) },
+      });
     });
 
     it("soma pedidos e metragem por material, com o mais usado primeiro", async () => {

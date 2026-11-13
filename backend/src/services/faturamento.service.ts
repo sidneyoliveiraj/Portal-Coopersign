@@ -40,17 +40,6 @@ function somarValores(pedidos: { valorTotal: unknown }[]): number {
   return arredondar(pedidos.reduce((soma, pedido) => soma + Number(pedido.valorTotal), 0));
 }
 
-type RetrabalhoDoPeriodo = { garantia: boolean; custoOperacional: unknown };
-
-function resumirRetrabalhos(retrabalhos: RetrabalhoDoPeriodo[]) {
-  const comCusto = retrabalhos.filter((r) => r.custoOperacional !== null);
-  return {
-    quantidade: retrabalhos.length,
-    custoInformado: arredondar(comCusto.reduce((soma, r) => soma + Number(r.custoOperacional), 0)),
-    semCusto: retrabalhos.length - comCusto.length,
-  };
-}
-
 export function faturamentoService(prisma: PrismaTenantClient) {
   const repository = faturamentoRepository(prisma);
   const clientes = clienteRepository(prisma);
@@ -107,7 +96,19 @@ export function faturamentoService(prisma: PrismaTenantClient) {
         ? Math.round((duracoes.reduce((soma, d) => soma + d, 0) / duracoes.length / 3_600_000) * 10) / 10
         : null;
 
-    const retrabalhos = comRetrabalho.flatMap((pedido) => pedido.retrabalhos);
+    const retrabalhos = comRetrabalho
+      .flatMap((pedido) =>
+        pedido.retrabalhos.map((r) => ({
+          id: r.id,
+          pedidoId: pedido.id,
+          data: r.criadoEm,
+          cliente: pedido.cliente.nome,
+          material: pedido.material.tipo,
+          motivo: r.motivo,
+          custo: Number(r.custoOperacional),
+        })),
+      )
+      .sort((a, b) => b.data.getTime() - a.data.getTime());
 
     return {
       receitaTotal: somarValores(concluidos),
@@ -123,8 +124,8 @@ export function faturamentoService(prisma: PrismaTenantClient) {
       taxaRetrabalho:
         concluidos.length > 0 ? Math.round((retrabalhos.length / concluidos.length) * 1000) / 10 : null,
       tempoMedioHoras,
-      retrabalhoProducao: resumirRetrabalhos(retrabalhos.filter((r) => !r.garantia)),
-      retrabalhoGarantia: resumirRetrabalhos(retrabalhos.filter((r) => r.garantia)),
+      custoRetrabalho: arredondar(retrabalhos.reduce((soma, r) => soma + r.custo, 0)),
+      retrabalhos,
       pedidos: concluidos,
     };
   }

@@ -22,6 +22,7 @@ import { api } from "../api";
 import { useConfirmacao } from "../confirmacao";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
+import { FormRetrabalho } from "../components/FormRetrabalho";
 import type { Pedido } from "../tipos";
 import {
   FORMA_PAGAMENTO,
@@ -56,6 +57,7 @@ export function DetalhePedidoPage() {
   const [erroAjuste, setErroAjuste] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [erroPagamento, setErroPagamento] = useState<string | null>(null);
+  const [abrirRetrabalho, setAbrirRetrabalho] = useState(false);
 
   const carregar = useCallback(() => {
     api<{ pedido: Pedido }>(`/pedidos/${id}`)
@@ -124,6 +126,8 @@ export function DetalhePedidoPage() {
   const servicos = pedido.pedidoServicos ?? [];
   const ajustes = pedido.ajustesValor ?? [];
   const retrabalhos = pedido.retrabalhos ?? [];
+  const podeRetrabalho =
+    usuario?.perfil !== "CLIENTE" && (pedido.status === "CONCLUIDO" || pedido.status === "FATURADO");
 
   return (
     <>
@@ -134,6 +138,11 @@ export function DetalhePedidoPage() {
       <Group justify="space-between" mt="xs" mb="md">
         <Title order={3}>Pedido de {pedido.cliente.nome}</Title>
         <Group gap="sm">
+          {podeRetrabalho && (
+            <Button variant="default" size="xs" onClick={() => setAbrirRetrabalho(true)}>
+              Retrabalho
+            </Button>
+          )}
           <Button component={Link} to={`/pedidos/${pedido.id}/comprovante`} variant="default" size="xs">
             Comprovante
           </Button>
@@ -214,10 +223,7 @@ export function DetalhePedidoPage() {
                       <Table.Tr key={r.id}>
                         <Table.Td>{formatarMomento(r.criadoEm)}</Table.Td>
                         <Table.Td>{r.motivo}</Table.Td>
-                        <Table.Td>{r.garantia ? "Garantia" : "Produção"}</Table.Td>
-                        <Table.Td ta="right">
-                          {r.custoOperacional === null ? "Custo não informado" : formatarMoeda(r.custoOperacional)}
-                        </Table.Td>
+                        <Table.Td ta="right">{formatarMoeda(r.custoOperacional)}</Table.Td>
                       </Table.Tr>
                     ))}
                   </Table.Tbody>
@@ -304,6 +310,16 @@ export function DetalhePedidoPage() {
           </Paper>
         </Grid.Col>
       </Grid>
+      {abrirRetrabalho && (
+        <FormRetrabalho
+          pedido={pedido}
+          aoFechar={() => setAbrirRetrabalho(false)}
+          aoSalvar={() => {
+            setAbrirRetrabalho(false);
+            carregar();
+          }}
+        />
+      )}
     </>
   );
 }

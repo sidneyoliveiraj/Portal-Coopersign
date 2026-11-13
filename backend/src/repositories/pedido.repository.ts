@@ -23,7 +23,7 @@ export function pedidoRepository(prisma: PrismaTenantClient) {
 
     listar() {
       return prisma.pedido.findMany({
-        include: { cliente: true, material: true },
+        include: { cliente: true, material: true, _count: { select: { retrabalhos: true } } },
         orderBy: { criadoEm: "desc" },
       });
     },

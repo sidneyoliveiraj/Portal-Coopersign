@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Alert,
@@ -7,10 +7,7 @@ import {
   Button,
   Group,
   Loader,
-  Modal,
-  NumberInput,
   Select,
-  Stack,
   Table,
   Text,
   TextInput,
@@ -19,79 +16,9 @@ import {
 import { api } from "../api";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
+import { FormRetrabalho } from "../components/FormRetrabalho";
 import type { Maquina, Pedido } from "../tipos";
-import { formatarArea, formatarData, formatarMedidas, formatarMoeda, formatarMomento, STATUS_PEDIDO } from "../formato";
-
-type RetrabalhoAberto = { pedido: Pedido; garantia: boolean };
-
-function FormRetrabalho({
-  alvo,
-  aoFechar,
-  aoSalvar,
-}: {
-  alvo: RetrabalhoAberto;
-  aoFechar: () => void;
-  aoSalvar: () => void;
-}) {
-  const [motivo, setMotivo] = useState("");
-  const [custoOperacional, setCustoOperacional] = useState<number | string>("");
-  const [erro, setErro] = useState<string | null>(null);
-  const [salvando, setSalvando] = useState(false);
-
-  async function enviar(evento: FormEvent) {
-    evento.preventDefault();
-    setErro(null);
-    setSalvando(true);
-    try {
-      await api(`/fila/pedidos/${alvo.pedido.id}/retrabalho`, {
-        metodo: "POST",
-        corpo: { motivo, custoOperacional, garantia: alvo.garantia },
-      });
-      aoSalvar();
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "erro ao registrar retrabalho");
-      setSalvando(false);
-    }
-  }
-
-  return (
-    <Modal
-      opened
-      onClose={aoFechar}
-      title={alvo.garantia ? "Retrabalho de garantia (sem custo ao cliente)" : "Retrabalho de produção"}
-    >
-      <form onSubmit={enviar}>
-        <Stack gap="sm">
-          <Text size="sm">{alvo.pedido.cliente.nome}</Text>
-          {erro && <Alert color="red">{erro}</Alert>}
-          <TextInput label="Motivo" required value={motivo} onChange={(e) => setMotivo(e.currentTarget.value)} />
-          <NumberInput
-            label="Custo operacional (R$)"
-            description={alvo.garantia ? undefined : "Deixe em branco se não souber o custo."}
-            required={alvo.garantia}
-            min={0}
-            decimalScale={2}
-            decimalSeparator=","
-            value={custoOperacional}
-            onChange={setCustoOperacional}
-          />
-          <Group justify="space-between">
-            <Button
-              type="button"
-              variant="default"
-              onClick={() => setCustoOperacional(Number(alvo.pedido.valorBase))}
-            >
-              Valor cheio ({formatarMoeda(alvo.pedido.valorBase)})
-            </Button>
-            <Button type="submit" loading={salvando}>
-              Registrar
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-    </Modal>
-  );
-}
+import { formatarArea, formatarData, formatarMedidas, formatarMomento, STATUS_PEDIDO } from "../formato";
 
 function CampoPosicao({
   posicao,
@@ -145,7 +72,7 @@ export function FilaPage() {
   const [fila, setFila] = useState<Pedido[] | null>(null);
   const [concluidos, setConcluidos] = useState<Pedido[]>([]);
   const [erro, setErro] = useState<string | null>(null);
-  const [retrabalho, setRetrabalho] = useState<RetrabalhoAberto | null>(null);
+  const [retrabalho, setRetrabalho] = useState<Pedido | null>(null);
 
   const podeMover = usuario?.perfil === "ADMINISTRADOR" || usuario?.perfil === "GESTOR";
 
@@ -274,12 +201,8 @@ export function FilaPage() {
                           <Button size="xs" color="green" onClick={() => atualizarStatus(pedido, "CONCLUIDO")}>
                             Concluir
                           </Button>
-                          <Button
-                            size="xs"
-                            variant="default"
-                            onClick={() => setRetrabalho({ pedido, garantia: false })}
-                          >
-                            Retrabalho
+                          <Button size="xs" variant="default" onClick={() => atualizarStatus(pedido, "NA_FILA")}>
+                            Voltar para a fila
                           </Button>
                         </>
                       )}
@@ -309,11 +232,8 @@ export function FilaPage() {
                   <Table.Td>{pedido.material.tipo}</Table.Td>
                   <Table.Td>
                     <Group gap="xs" justify="flex-end">
-                      <Button size="xs" variant="default" onClick={() => setRetrabalho({ pedido, garantia: false })}>
+                      <Button size="xs" variant="default" onClick={() => setRetrabalho(pedido)}>
                         Retrabalho
-                      </Button>
-                      <Button size="xs" variant="default" onClick={() => setRetrabalho({ pedido, garantia: true })}>
-                        Garantia
                       </Button>
                     </Group>
                   </Table.Td>
@@ -326,7 +246,7 @@ export function FilaPage() {
 
       {retrabalho && (
         <FormRetrabalho
-          alvo={retrabalho}
+          pedido={retrabalho}
           aoFechar={() => setRetrabalho(null)}
           aoSalvar={() => {
             setRetrabalho(null);

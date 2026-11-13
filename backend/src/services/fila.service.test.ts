@@ -76,6 +76,60 @@ describe("filaService", () => {
       });
     });
 
+    it("volta para a fila quando o Iniciar foi clicado sem querer", async () => {
+      prisma.pedido.findUnique.mockResolvedValue({
+        id: "ped-1",
+        status: "EM_PRODUCAO",
+        iniciadoEm: new Date(),
+        concluidoEm: null,
+      });
+      await service.atualizarStatus("ped-1", { status: "NA_FILA" });
+
+      expect(prisma.pedido.update).toHaveBeenCalledWith({
+        where: { id: "ped-1" },
+        data: { status: "NA_FILA", iniciadoEm: null },
+      });
+    });
+
+    it("pedido sendo refeito volta para a fila como retrabalho", async () => {
+      const iniciadoEm = new Date("2026-11-01T10:00:00Z");
+      prisma.pedido.findUnique.mockResolvedValue({
+        id: "ped-1",
+        status: "EM_PRODUCAO",
+        iniciadoEm,
+        concluidoEm: new Date("2026-11-02T10:00:00Z"),
+      });
+      await service.atualizarStatus("ped-1", { status: "NA_FILA" });
+
+      expect(prisma.pedido.update).toHaveBeenCalledWith({
+        where: { id: "ped-1" },
+        data: { status: "RETRABALHO", iniciadoEm },
+      });
+    });
+
+    it("so volta para a fila quem esta em producao", async () => {
+      await expect(service.atualizarStatus("ped-1", { status: "NA_FILA" })).rejects.toThrow(PedidoInvalidoError);
+    });
+
+    it.each(["CONCLUIDO", "FATURADO"])(
+      "retrabalho concluido volta para %s e mantem a data da primeira conclusao",
+      async (statusOrigem) => {
+        const concluidoEm = new Date("2026-10-20T10:00:00Z");
+        prisma.pedido.findUnique.mockResolvedValue({
+          id: "ped-1",
+          status: "EM_PRODUCAO",
+          concluidoEm,
+          retrabalhos: [{ statusOrigem: "CONCLUIDO" }, { statusOrigem }],
+        });
+        await service.atualizarStatus("ped-1", { status: "CONCLUIDO" });
+
+        expect(prisma.pedido.update).toHaveBeenCalledWith({
+          where: { id: "ped-1" },
+          data: { status: statusOrigem, posicaoFila: null, concluidoEm },
+        });
+      },
+    );
+
     it("nao pula etapa de producao", async () => {
       await expect(service.atualizarStatus("ped-1", { status: "CONCLUIDO" })).rejects.toThrow(PedidoInvalidoError);
       expect(prisma.pedido.update).not.toHaveBeenCalled();
@@ -83,7 +137,7 @@ describe("filaService", () => {
 
     it.each(["FATURADO", "constructor", undefined])("rejeita status invalido: %s", async (status) => {
       await expect(service.atualizarStatus("ped-1", { status })).rejects.toThrow(
-        "status deve ser EM_PRODUCAO ou CONCLUIDO",
+        "status deve ser NA_FILA, EM_PRODUCAO ou CONCLUIDO",
       );
     });
 
@@ -97,72 +151,47 @@ describe("filaService", () => {
   });
 
   describe("registrarRetrabalho", () => {
-    it("exige motivo (RN05)", async () => {
-      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "EM_PRODUCAO" });
+    beforeEach(() => {
+      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "CONCLUIDO", maquinaId: "maq-1" });
+    });
 
+    it("exige motivo (RN05)", async () => {
       await expect(service.registrarRetrabalho("ped-1", { custoOperacional: 10 })).rejects.toThrow(
         "motivo e obrigatorio",
       );
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
-    it("exige custo operacional valido", async () => {
+    it.each([undefined, null, "", 0, -1, "abc"])("exige custo maior que zero (%s)", async (custoOperacional) => {
       await expect(
-        service.registrarRetrabalho("ped-1", { motivo: "cor errada", custoOperacional: -1 }),
-      ).rejects.toThrow("custoOperacional deve ser um numero maior ou igual a zero");
-    });
-
-    it.each([undefined, null, ""])("aceita retrabalho de producao sem custo (%s)", async (custoOperacional) => {
-      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "EM_PRODUCAO" });
-      await service.registrarRetrabalho("ped-1", { motivo: "bateu a cabeca", custoOperacional });
-
-      expect(prisma.retrabalho.create).toHaveBeenCalledWith({
-        data: { pedidoId: "ped-1", motivo: "bateu a cabeca", custoOperacional: null, garantia: false },
-      });
-    });
-
-    it("exige custo no retrabalho de garantia (RN06)", async () => {
-      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "CONCLUIDO" });
-
-      await expect(service.registrarRetrabalho("ped-1", { motivo: "descolou", garantia: true })).rejects.toThrow(
-        "custoOperacional e obrigatorio em retrabalho de garantia",
-      );
+        service.registrarRetrabalho("ped-1", { motivo: "lona rasgou", custoOperacional }),
+      ).rejects.toThrow("custoOperacional e obrigatorio e deve ser maior que zero");
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
-    it("registra retrabalho de producao e volta o pedido para a fila", async () => {
-      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "EM_PRODUCAO" });
-      await service.registrarRetrabalho("ped-1", { motivo: "cor errada", custoOperacional: 25.5 });
+    it.each(["CONCLUIDO", "FATURADO"])("registra retrabalho de pedido %s e guarda o status de origem", async (status) => {
+      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status, maquinaId: "maq-1" });
+      await service.registrarRetrabalho("ped-1", { motivo: "lona rasgou", custoOperacional: "29" });
 
       expect(prisma.retrabalho.create).toHaveBeenCalledWith({
-        data: { pedidoId: "ped-1", motivo: "cor errada", custoOperacional: 25.5, garantia: false },
+        data: { pedidoId: "ped-1", motivo: "lona rasgou", custoOperacional: 29, statusOrigem: status },
       });
       expect(prisma.pedido.update).toHaveBeenCalledWith({
         where: { id: "ped-1" },
-        data: { status: "RETRABALHO" },
+        data: { status: "RETRABALHO", posicaoFila: null },
       });
     });
 
-    it("registra garantia sem alterar o valor do pedido (RN06)", async () => {
-      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "CONCLUIDO" });
-      await service.registrarRetrabalho("ped-1", { motivo: "descolou", custoOperacional: 40, garantia: true });
+    it.each(["NA_FILA", "EM_PRODUCAO", "RETRABALHO", "AGUARDANDO_VALIDACAO"])(
+      "nao aceita retrabalho de pedido em %s",
+      async (status) => {
+        prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status, maquinaId: "maq-1" });
 
-      expect(prisma.retrabalho.create).toHaveBeenCalledWith({
-        data: { pedidoId: "ped-1", motivo: "descolou", custoOperacional: 40, garantia: true },
-      });
-      expect(prisma.pedido.update).toHaveBeenCalledWith({
-        where: { id: "ped-1" },
-        data: { status: "RETRABALHO" },
-      });
-    });
-
-    it("nao aceita garantia em pedido que ainda nao foi concluido", async () => {
-      prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "EM_PRODUCAO" });
-
-      await expect(
-        service.registrarRetrabalho("ped-1", { motivo: "descolou", custoOperacional: 40, garantia: true }),
-      ).rejects.toThrow(PedidoInvalidoError);
-    });
+        await expect(
+          service.registrarRetrabalho("ped-1", { motivo: "lona rasgou", custoOperacional: 29 }),
+        ).rejects.toThrow("so pedido concluido ou faturado aceita retrabalho");
+      },
+    );
   });
 
   describe("mover", () => {
