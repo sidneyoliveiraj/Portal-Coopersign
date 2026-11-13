@@ -17,6 +17,13 @@ export function faturamentoRepository(prisma: PrismaTenantClient) {
       });
     },
 
+    listarContasAbertas({ inicio, fim }: Periodo) {
+      return prisma.pedido.findMany({
+        where: { formaPagamento: "EM_CONTA", status: "CONCLUIDO", concluidoEm: { gte: inicio, lte: fim } },
+        include: { cliente: true },
+      });
+    },
+
     marcarFaturados(ids: string[]) {
       return prisma.pedido.updateMany({
         where: { id: { in: ids }, status: "CONCLUIDO" },

@@ -57,6 +57,25 @@ export function faturamentoService(prisma: PrismaTenantClient) {
     return { pedidos, total: somarValores(pedidos) };
   }
 
+  // Todos os clientes com pedido em conta concluido no periodo, para quem nao lembra quem deve.
+  async function contasAbertas(dados: Record<string, unknown>) {
+    const pedidos = await repository.listarContasAbertas(periodo(dados));
+    const porCliente = new Map<string, { clienteId: string; nome: string; quantidade: number; total: number }>();
+    for (const pedido of pedidos) {
+      const atual = porCliente.get(pedido.clienteId) ?? {
+        clienteId: pedido.clienteId,
+        nome: pedido.cliente.nome,
+        quantidade: 0,
+        total: 0,
+      };
+      atual.quantidade += 1;
+      atual.total = arredondar(atual.total + Number(pedido.valorTotal));
+      porCliente.set(pedido.clienteId, atual);
+    }
+    const clientes = [...porCliente.values()].sort((a, b) => b.total - a.total);
+    return { clientes, total: somarValores(pedidos) };
+  }
+
   async function fecharConta(dados: Record<string, unknown>) {
     const { pedidos, total } = await contaAberta(dados);
     if (pedidos.length === 0) {
@@ -130,5 +149,5 @@ export function faturamentoService(prisma: PrismaTenantClient) {
     };
   }
 
-  return { contaAberta, fecharConta, indicadores };
+  return { contaAberta, contasAbertas, fecharConta, indicadores };
 }

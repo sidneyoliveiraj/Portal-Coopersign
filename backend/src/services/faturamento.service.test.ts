@@ -23,6 +23,34 @@ describe("faturamentoService", () => {
     service = faturamentoService(prisma as unknown as PrismaTenantClient);
   });
 
+  describe("contasAbertas (RF24 por periodo)", () => {
+    it("agrupa por cliente, soma e ordena pelo maior total", async () => {
+      prisma.pedido.findMany.mockResolvedValue([
+        { clienteId: "cli-1", cliente: { nome: "Amais" }, valorTotal: "29" },
+        { clienteId: "cli-2", cliente: { nome: "DGM" }, valorTotal: "121.28" },
+        { clienteId: "cli-1", cliente: { nome: "Amais" }, valorTotal: "10.10" },
+      ]);
+
+      const resultado = await service.contasAbertas(periodoValido);
+
+      expect(resultado.clientes).toEqual([
+        { clienteId: "cli-2", nome: "DGM", quantidade: 1, total: 121.28 },
+        { clienteId: "cli-1", nome: "Amais", quantidade: 2, total: 39.1 },
+      ]);
+      expect(resultado.total).toBe(160.38);
+      expect(prisma.pedido.findMany.mock.calls[0][0].where).toMatchObject({
+        formaPagamento: "EM_CONTA",
+        status: "CONCLUIDO",
+      });
+    });
+
+    it("exige periodo valido", async () => {
+      await expect(service.contasAbertas({ inicio: "2026-11-30", fim: "2026-11-01" })).rejects.toThrow(
+        FaturamentoInvalidoError,
+      );
+    });
+  });
+
   describe("contaAberta (RF24, RN08)", () => {
     it("busca so pedidos em conta concluidos do cliente no periodo", async () => {
       prisma.pedido.findMany.mockResolvedValue([{ valorTotal: "100.10" }, { valorTotal: "50.20" }]);

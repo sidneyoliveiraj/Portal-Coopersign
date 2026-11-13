@@ -8,6 +8,10 @@ import type { Cliente, Pedido } from "../tipos";
 import { formatarData, formatarMedidas, formatarMoeda, formatarMomento, inicioDoMes, hojeIso } from "../formato";
 
 type Conta = { pedidos: Pedido[]; total: number };
+type ContasAbertas = {
+  clientes: { clienteId: string; nome: string; quantidade: number; total: number }[];
+  total: number;
+};
 
 const ESTILO_IMPRESSAO = `
   .so-impressao { display: none; }
@@ -25,6 +29,7 @@ export function FaturamentoPage() {
   const [inicio, setInicio] = useState(inicioDoMes());
   const [fim, setFim] = useState(hojeIso());
   const [conta, setConta] = useState<Conta | null>(null);
+  const [contas, setContas] = useState<ContasAbertas | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [fechando, setFechando] = useState(false);
@@ -35,16 +40,27 @@ export function FaturamentoPage() {
       .catch((e) => setErro(e.message));
   }, []);
 
-  async function buscar(evento?: FormEvent) {
+  async function buscar(evento?: FormEvent, cliente: string | null = clienteId) {
     evento?.preventDefault();
     setErro(null);
     setAviso(null);
+    setConta(null);
+    setContas(null);
     try {
-      const parametros = new URLSearchParams({ clienteId: clienteId ?? "", inicio, fim });
-      setConta(await api<Conta>(`/faturamento/conta?${parametros}`));
+      if (cliente) {
+        const parametros = new URLSearchParams({ clienteId: cliente, inicio, fim });
+        setConta(await api<Conta>(`/faturamento/conta?${parametros}`));
+      } else {
+        setContas(await api<ContasAbertas>(`/faturamento/contas?${new URLSearchParams({ inicio, fim })}`));
+      }
     } catch (e) {
       setErro(e instanceof Error ? e.message : "erro ao buscar a conta");
     }
+  }
+
+  function verCliente(id: string) {
+    setClienteId(id);
+    buscar(undefined, id);
   }
 
   async function fechar() {
@@ -79,6 +95,7 @@ export function FaturamentoPage() {
   function trocarFiltro(aplicar: () => void) {
     aplicar();
     setConta(null);
+    setContas(null);
     setAviso(null);
   }
 
@@ -110,9 +127,9 @@ export function FaturamentoPage() {
           <Group align="flex-end">
             <Select
               label="Cliente"
-              placeholder="Selecione"
+              placeholder="Todos os clientes"
               searchable
-              required
+              clearable
               style={{ flex: 1 }}
               data={clientes.map((c) => ({ value: c.id, label: c.nome }))}
               value={clienteId}
@@ -138,9 +155,7 @@ export function FaturamentoPage() {
                 trocarFiltro(() => setFim(valor));
               }}
             />
-            <Button type="submit" disabled={!clienteId}>
-              Ver conta
-            </Button>
+            <Button type="submit">{clienteId ? "Ver conta" : "Ver quem deve"}</Button>
           </Group>
         </form>
       </Paper>
@@ -154,6 +169,43 @@ export function FaturamentoPage() {
         <Alert color="green" mb="md">
           {aviso}
         </Alert>
+      )}
+
+      {contas?.clientes.length === 0 && <Text c="dimmed">Nenhum cliente com conta em aberto neste período.</Text>}
+
+      {contas && contas.clientes.length > 0 && (
+        <Table withTableBorder mb="md" className="nao-imprimir">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Cliente</Table.Th>
+              <Table.Th ta="right">Pedidos</Table.Th>
+              <Table.Th ta="right">Em aberto</Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {contas.clientes.map((linha) => (
+              <Table.Tr key={linha.clienteId}>
+                <Table.Td>{linha.nome}</Table.Td>
+                <Table.Td ta="right">{linha.quantidade}</Table.Td>
+                <Table.Td ta="right">{formatarMoeda(linha.total)}</Table.Td>
+                <Table.Td ta="right">
+                  <Button size="xs" variant="default" onClick={() => verCliente(linha.clienteId)}>
+                    Ver conta
+                  </Button>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+          <Table.Tfoot>
+            <Table.Tr>
+              <Table.Th>Total em aberto</Table.Th>
+              <Table.Th />
+              <Table.Th ta="right">{formatarMoeda(contas.total)}</Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Tfoot>
+        </Table>
       )}
 
       {conta?.pedidos.length === 0 && <Text c="dimmed">Nenhum pedido em conta concluído neste período.</Text>}

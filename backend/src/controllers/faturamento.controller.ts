@@ -17,6 +17,15 @@ export async function contaAbertaController(req: Request, res: Response) {
   }
 }
 
+export async function contasAbertasController(req: Request, res: Response) {
+  try {
+    const contas = await faturamentoService(req.prisma!).contasAbertas(req.query);
+    return res.status(200).json(contas);
+  } catch (erro) {
+    return responderErro(erro, res);
+  }
+}
+
 export async function fecharContaController(req: Request, res: Response) {
   try {
     const fechamento = await faturamentoService(req.prisma!).fecharConta(req.body ?? {});
