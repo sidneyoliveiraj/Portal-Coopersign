@@ -5,10 +5,13 @@ import { vi } from "vitest";
 export type Requisicao = { metodo: string; caminho: string; query: URLSearchParams; corpo: unknown };
 
 class RespostaDeErro {
-  constructor(
-    readonly status: number,
-    readonly erro: string,
-  ) {}
+  status: number;
+  erro: string;
+
+  constructor(status: number, erro: string) {
+    this.status = status;
+    this.erro = erro;
+  }
 }
 
 /** Resposta de erro da API, ex.: erroDaApi(401, "credenciais invalidas"). */

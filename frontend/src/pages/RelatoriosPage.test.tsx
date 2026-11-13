@@ -68,7 +68,8 @@ describe("Relatórios (RF25, RF28)", () => {
 
     await usuario.click(screen.getByText("Este ano"));
 
-    const ultima = api.chamadas("GET /faturamento/indicadores").at(-1)!;
+    const chamadas = api.chamadas("GET /faturamento/indicadores");
+    const ultima = chamadas[chamadas.length - 1];
     expect(ultima.query.get("inicio")).toBe(`${hojeIso().slice(0, 4)}-01-01`);
     expect(ultima.query.get("fim")).toBe(hojeIso());
   });
