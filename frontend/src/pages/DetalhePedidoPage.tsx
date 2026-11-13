@@ -23,6 +23,7 @@ import { useConfirmacao } from "../confirmacao";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import { useAuth } from "../auth";
 import { FormRetrabalho } from "../components/FormRetrabalho";
+import { ReferenciaArquivo } from "../components/ReferenciaArquivo";
 import type { Pedido } from "../tipos";
 import {
   FORMA_PAGAMENTO,
@@ -181,11 +182,7 @@ export function DetalhePedidoPage() {
                 )}
                 <Campo
                   rotulo="Arquivo de arte"
-                  valor={
-                    <Anchor href={pedido.arquivoUrl} target="_blank" rel="noreferrer" size="sm">
-                      Abrir arquivo
-                    </Anchor>
-                  }
+                  valor={<ReferenciaArquivo referencia={pedido.arquivoUrl} />}
                 />
                 {pedido.maquina && <Campo rotulo="Máquina" valor={pedido.maquina.nome} />}
                 {pedido.observacaoTecnica && <Campo rotulo="Observações técnicas" valor={pedido.observacaoTecnica} />}

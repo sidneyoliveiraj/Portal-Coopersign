@@ -68,6 +68,11 @@ export const STATUS_PEDIDO: Record<string, { rotulo: string; cor: string }> = {
   REJEITADO: { rotulo: "Rejeitado", cor: "red" },
 };
 
+// A referência do arquivo pode ser um link ou um texto livre ("WhatsApp do Charles").
+export function ehLink(referencia: string) {
+  return /^https?:\/\/\S+$/i.test(referencia.trim());
+}
+
 export const FORMA_PAGAMENTO: Record<string, string> = {
   A_VISTA: "À vista",
   EM_CONTA: "Em conta",

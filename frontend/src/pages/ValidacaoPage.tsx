@@ -5,6 +5,7 @@ import { api } from "../api";
 import { useConfirmacao } from "../confirmacao";
 import { useAtualizacoesDePedidos } from "../tempoReal";
 import type { Maquina, Pedido } from "../tipos";
+import { ReferenciaArquivo } from "../components/ReferenciaArquivo";
 import { formatarArea, formatarData, formatarMedidas, formatarMomento } from "../formato";
 
 function CartaoValidacao({
@@ -65,9 +66,7 @@ function CartaoValidacao({
       </Group>
       <Text size="sm" mb="sm">
         {pedido.material.tipo} · {formatarMedidas(pedido)} · {formatarArea(pedido.metragemTotal)} · {pedido.acabamento} ·{" "}
-        <Anchor href={pedido.arquivoUrl} target="_blank" rel="noreferrer" size="sm">
-          Abrir arquivo
-        </Anchor>
+        <ReferenciaArquivo referencia={pedido.arquivoUrl} />
       </Text>
 
       <Stack gap="sm">

@@ -60,6 +60,8 @@ export function NovoPedidoPage() {
       const medidas = await lerMedidasDoArquivo(new Uint8Array(await arquivo.arrayBuffer()));
       setLargura(medidas.larguraCm);
       setAltura(medidas.alturaCm);
+      // Sem referência digitada, o nome do arquivo serve para o operador saber qual arte imprimir.
+      setArquivoUrl((atual) => (atual.trim() ? atual : arquivo.name));
       setLeitura({ ok: true, texto: `${arquivo.name} (${medidas.origem}). Confira as medidas.` });
     } catch (e) {
       const mensagem = e instanceof ArquivoSemMedidasError ? e.message : "Não foi possível ler o arquivo.";
@@ -234,8 +236,9 @@ export function NovoPedidoPage() {
             />
 
             <TextInput
-              label="Link do arquivo de arte"
-              placeholder="https://"
+              label="Referência do arquivo de arte"
+              description="Link, nome do arquivo ou de onde veio (ex: WhatsApp do cliente)"
+              placeholder="Ex: banner-110x80.pdf"
               required
               value={arquivoUrl}
               onChange={(e) => setArquivoUrl(e.currentTarget.value)}
