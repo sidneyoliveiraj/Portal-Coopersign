@@ -5,6 +5,7 @@ import {
   Alert,
   Button,
   Divider,
+  FileButton,
   Grid,
   Group,
   NumberInput,
@@ -20,6 +21,7 @@ import { api } from "../api";
 import { useConfirmacao } from "../confirmacao";
 import type { Cliente, Material, Pedido, ServicoAdicional } from "../tipos";
 import { arredondarCentavos, cmParaMetros, formatarArea, formatarMoeda, metragemCobrada } from "../formato";
+import { ArquivoSemMedidasError, lerMedidasDoArquivo } from "../medidasArquivo";
 
 type ItemServico = { servicoAdicionalId: string; quantidade: number };
 
@@ -44,6 +46,28 @@ export function NovoPedidoPage() {
 
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [leitura, setLeitura] = useState<{ ok: boolean; texto: string } | null>(null);
+  const [lendo, setLendo] = useState(false);
+
+  // RF06: o arquivo é lido aqui no navegador; nada é enviado ao servidor.
+  async function lerArquivo(arquivo: File | null) {
+    if (!arquivo) {
+      return;
+    }
+    setLendo(true);
+    setLeitura(null);
+    try {
+      const medidas = await lerMedidasDoArquivo(new Uint8Array(await arquivo.arrayBuffer()));
+      setLargura(medidas.larguraCm);
+      setAltura(medidas.alturaCm);
+      setLeitura({ ok: true, texto: `${arquivo.name} (${medidas.origem}). Confira as medidas.` });
+    } catch (e) {
+      const mensagem = e instanceof ArquivoSemMedidasError ? e.message : "Não foi possível ler o arquivo.";
+      setLeitura({ ok: false, texto: `${arquivo.name}: ${mensagem}` });
+    } finally {
+      setLendo(false);
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -157,6 +181,19 @@ export function NovoPedidoPage() {
               value={materialId}
               onChange={setMaterialId}
             />
+
+            <Group gap="sm">
+              <FileButton onChange={lerArquivo} accept=".pdf,.ai,.png,.jpg,.jpeg,.tif,.tiff,.cdr">
+                {(props) => (
+                  <Button {...props} variant="default" size="xs" loading={lendo}>
+                    Ler medidas do arquivo
+                  </Button>
+                )}
+              </FileButton>
+              <Text size="xs" c={leitura ? (leitura.ok ? "green" : "orange") : "dimmed"}>
+                {leitura?.texto ?? "PDF, PNG, JPEG ou TIFF. O arquivo não é enviado, só lido."}
+              </Text>
+            </Group>
 
             <Group grow>
               <NumberInput
