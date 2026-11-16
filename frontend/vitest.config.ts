@@ -15,6 +15,7 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/**/*.test.{ts,tsx}", "src/testes/**", "src/main.tsx", "src/vite-env.d.ts", "src/tipos.ts"],
       reporter: ["text-summary", "text", "html", "lcov"],
+      thresholds: { lines: 25 },
     },
   },
 });
