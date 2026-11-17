@@ -236,7 +236,7 @@ export function RelatoriosPage() {
             <Indicador
               rotulo="Taxa de retrabalho"
               valor={dados.taxaRetrabalho === null ? "—" : `${dados.taxaRetrabalho.toLocaleString("pt-BR")}%`}
-              detalhe="Por pedido concluído"
+              detalhe="Dos pedidos concluídos"
             />
             <Indicador
               rotulo="Tempo médio de produção"

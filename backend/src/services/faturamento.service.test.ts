@@ -11,6 +11,7 @@ function criarPrismaFalso() {
       findMany: vi.fn().mockResolvedValue([]),
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    $transaction: vi.fn(),
   };
 }
 
@@ -20,6 +21,7 @@ describe("faturamentoService", () => {
 
   beforeEach(() => {
     prisma = criarPrismaFalso();
+    prisma.$transaction.mockImplementation((callback: (tx: unknown) => unknown) => callback(prisma));
     service = faturamentoService(prisma as unknown as PrismaTenantClient);
   });
 
@@ -65,12 +67,21 @@ describe("faturamentoService", () => {
       });
     });
 
-    it("usa o dia inteiro no fuso do Brasil", async () => {
+    it("pega tudo que esta em aberto ate o fim do dia no fuso do Brasil", async () => {
       await service.contaAberta({ clienteId: "cli-1", inicio: "2026-11-05", fim: "2026-11-05" });
 
       const { concluidoEm } = prisma.pedido.findMany.mock.calls[0][0].where;
-      expect(concluidoEm.gte.toISOString()).toBe("2026-11-05T03:00:00.000Z");
-      expect(concluidoEm.lte.toISOString()).toBe("2026-11-06T02:59:59.999Z");
+      expect(concluidoEm).toEqual({ lte: new Date("2026-11-06T02:59:59.999Z") });
+    });
+
+    it("inclui pedido refeito que voltou com a data de um mes ja fechado", async () => {
+      // concluido em outubro, entrou em retrabalho antes do fechamento e foi refeito em novembro
+      prisma.pedido.findMany.mockResolvedValue([{ id: "ped-out", valorTotal: "29", concluidoEm: new Date("2026-10-20") }]);
+
+      const conta = await service.contaAberta({ clienteId: "cli-1", ...periodoValido });
+
+      expect(conta.total).toBe(29);
+      expect(prisma.pedido.findMany.mock.calls[0][0].where.concluidoEm).not.toHaveProperty("gte");
     });
 
     it.each([
@@ -97,6 +108,8 @@ describe("faturamentoService", () => {
         { id: "ped-2", valorTotal: "50" },
       ]);
 
+      prisma.pedido.updateMany.mockResolvedValue({ count: 2 });
+
       const fechamento = await service.fecharConta({ clienteId: "cli-1", ...periodoValido });
 
       expect(fechamento).toMatchObject({ quantidade: 2, total: 150 });
@@ -108,9 +121,22 @@ describe("faturamentoService", () => {
 
     it("nao fecha conta vazia", async () => {
       await expect(service.fecharConta({ clienteId: "cli-1", ...periodoValido })).rejects.toThrow(
-        "nao ha pedidos em conta concluidos neste periodo",
+        "nao ha pedidos em conta concluidos ate o fim deste periodo",
       );
       expect(prisma.pedido.updateMany).not.toHaveBeenCalled();
+    });
+
+    it("clique duplo ou retrabalho no meio: nao fatura nada e nao devolve comprovante", async () => {
+      prisma.pedido.findMany.mockResolvedValue([
+        { id: "ped-1", valorTotal: "100" },
+        { id: "ped-2", valorTotal: "50" },
+      ]);
+      // so 1 dos 2 pedidos ainda estava CONCLUIDO na hora de gravar
+      prisma.pedido.updateMany.mockResolvedValue({ count: 1 });
+
+      await expect(service.fecharConta({ clienteId: "cli-1", ...periodoValido })).rejects.toThrow(
+        "a conta mudou enquanto era fechada; busque a conta de novo",
+      );
     });
   });
 
@@ -130,6 +156,7 @@ describe("faturamentoService", () => {
             maquina: { nome: "Roland" },
             iniciadoEm: inicio,
             concluidoEm: new Date("2026-11-02T12:00:00Z"),
+            _count: { retrabalhos: 1 },
           },
           {
             valorTotal: "50.5",
@@ -142,6 +169,7 @@ describe("faturamentoService", () => {
             maquina: { nome: "Roland" },
             iniciadoEm: inicio,
             concluidoEm: new Date("2026-11-02T14:00:00Z"),
+            _count: { retrabalhos: 0 },
           },
         ])
         .mockResolvedValueOnce([
@@ -163,7 +191,8 @@ describe("faturamentoService", () => {
       expect(resultado.receitaPorForma).toEqual({ A_VISTA: 100, EM_CONTA: 50.5 });
       expect(resultado.pedidosPorMaquina).toEqual([{ maquina: "Roland", quantidade: 2 }]);
       expect(resultado.tempoMedioHoras).toBe(3);
-      expect(resultado.taxaRetrabalho).toBe(150);
+      // 3 retrabalhos no periodo, mas so 1 dos 2 pedidos concluidos foi refeito: 50%, e nao 150%
+      expect(resultado.taxaRetrabalho).toBe(50);
       expect(resultado.custoRetrabalho).toBe(139.5);
       expect(resultado.retrabalhos.map((r) => r.id)).toEqual(["r-2", "r-3", "r-1"]);
       expect(resultado.retrabalhos[0]).toEqual({
@@ -188,9 +217,9 @@ describe("faturamentoService", () => {
     it("soma pedidos e metragem por material, com o mais usado primeiro", async () => {
       prisma.pedido.findMany
         .mockResolvedValueOnce([
-          { valorTotal: "10", metragemTotal: "1.62", material: { tipo: "Adesivo fosco 106 cm" } },
-          { valorTotal: "10", metragemTotal: "5.10", material: { tipo: "Lona fosca 120 cm" } },
-          { valorTotal: "10", metragemTotal: "2.79", material: { tipo: "Adesivo fosco 106 cm" } },
+          { valorTotal: "10", metragemTotal: "1.62", material: { tipo: "Adesivo fosco 106 cm" }, _count: { retrabalhos: 0 } },
+          { valorTotal: "10", metragemTotal: "5.10", material: { tipo: "Lona fosca 120 cm" }, _count: { retrabalhos: 0 } },
+          { valorTotal: "10", metragemTotal: "2.79", material: { tipo: "Adesivo fosco 106 cm" }, _count: { retrabalhos: 0 } },
         ])
         .mockResolvedValueOnce([]);
 

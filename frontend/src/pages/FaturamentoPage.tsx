@@ -171,7 +171,7 @@ export function FaturamentoPage() {
         </Alert>
       )}
 
-      {contas?.clientes.length === 0 && <Text c="dimmed">Nenhum cliente com conta em aberto neste período.</Text>}
+      {contas?.clientes.length === 0 && <Text c="dimmed">Nenhum cliente com conta em aberto até o fim deste período.</Text>}
 
       {contas && contas.clientes.length > 0 && (
         <Table withTableBorder mb="md" className="nao-imprimir">
@@ -208,7 +208,7 @@ export function FaturamentoPage() {
         </Table>
       )}
 
-      {conta?.pedidos.length === 0 && <Text c="dimmed">Nenhum pedido em conta concluído neste período.</Text>}
+      {conta?.pedidos.length === 0 && <Text c="dimmed">Nenhum pedido em conta em aberto até o fim deste período.</Text>}
 
       {conta && conta.pedidos.length > 0 && (
         <>

@@ -1,6 +1,6 @@
 import { PrismaTenantClient } from "../lib/prisma-tenant";
 import { clienteRepository } from "../repositories/cliente.repository";
-import { faturamentoRepository, Periodo } from "../repositories/faturamento.repository";
+import { ContaAlteradaError, faturamentoRepository, Periodo } from "../repositories/faturamento.repository";
 import { calcularMetragemCobrada } from "./pedido-calculo.service";
 
 export class FaturamentoInvalidoError extends Error {
@@ -147,9 +147,16 @@ export function faturamentoService(prisma: PrismaTenantClient) {
   async function fecharConta(dados: Record<string, unknown>) {
     const { pedidos, total } = await contaAberta(dados);
     if (pedidos.length === 0) {
-      throw new FaturamentoInvalidoError("nao ha pedidos em conta concluidos neste periodo");
+      throw new FaturamentoInvalidoError("nao ha pedidos em conta concluidos ate o fim deste periodo");
     }
-    await repository.marcarFaturados(pedidos.map((pedido) => pedido.id));
+    try {
+      await repository.marcarFaturados(pedidos.map((pedido) => pedido.id));
+    } catch (erro) {
+      if (erro instanceof ContaAlteradaError) {
+        throw new FaturamentoInvalidoError("a conta mudou enquanto era fechada; busque a conta de novo");
+      }
+      throw erro;
+    }
     return { quantidade: pedidos.length, total, pedidos };
   }
 
@@ -208,8 +215,11 @@ export function faturamentoService(prisma: PrismaTenantClient) {
       pedidosPorMaterial: [...porMaterial]
         .map(([material, { quantidade, metragem }]) => ({ material, quantidade, metragem: arredondar(metragem) }))
         .sort((a, b) => b.metragem - a.metragem),
+      // Dos pedidos concluidos no periodo, quantos % precisaram ser refeitos (nunca passa de 100%).
       taxaRetrabalho:
-        concluidos.length > 0 ? Math.round((retrabalhos.length / concluidos.length) * 1000) / 10 : null,
+        concluidos.length > 0
+          ? Math.round((concluidos.filter((p) => p._count.retrabalhos > 0).length / concluidos.length) * 1000) / 10
+          : null,
       tempoMedioHoras,
       custoRetrabalho: arredondar(retrabalhos.reduce((soma, r) => soma + r.custo, 0)),
       retrabalhos,
