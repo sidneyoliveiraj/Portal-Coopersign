@@ -1,3 +1,4 @@
+import { StatusPedido } from "../generated/prisma/enums";
 import { PrismaTenantClient } from "../lib/prisma-tenant";
 
 const dadosListagem = { cliente: true, material: true };
@@ -30,17 +31,19 @@ export function filaRepository(prisma: PrismaTenantClient) {
       });
     },
 
-    iniciarProducao(id: string, iniciadoEm: Date) {
-      return prisma.pedido.update({ where: { id }, data: { status: "EM_PRODUCAO", iniciadoEm } });
+    // As tres mudancas de status so gravam se o pedido ainda estiver no status lido antes.
+    // Com dois operadores clicando juntos, o segundo recebe count 0 em vez de passar por cima.
+    iniciarProducao(id: string, statusAtual: StatusPedido, iniciadoEm: Date) {
+      return prisma.pedido.updateMany({ where: { id, status: statusAtual }, data: { status: "EM_PRODUCAO", iniciadoEm } });
     },
 
-    voltarParaFila(id: string, status: "NA_FILA" | "RETRABALHO", iniciadoEm: Date | null) {
-      return prisma.pedido.update({ where: { id }, data: { status, iniciadoEm } });
+    voltarParaFila(id: string, statusAtual: StatusPedido, status: "NA_FILA" | "RETRABALHO", iniciadoEm: Date | null) {
+      return prisma.pedido.updateMany({ where: { id, status: statusAtual }, data: { status, iniciadoEm } });
     },
 
-    concluir(id: string, status: "CONCLUIDO" | "FATURADO", concluidoEm: Date) {
-      return prisma.pedido.update({
-        where: { id },
+    concluir(id: string, statusAtual: StatusPedido, status: "CONCLUIDO" | "FATURADO", concluidoEm: Date) {
+      return prisma.pedido.updateMany({
+        where: { id, status: statusAtual },
         data: { status, posicaoFila: null, concluidoEm },
       });
     },
@@ -52,10 +55,16 @@ export function filaRepository(prisma: PrismaTenantClient) {
     },
 
     registrarRetrabalho(dados: RetrabalhoInput) {
-      return prisma.$transaction([
-        prisma.retrabalho.create({ data: dados }),
-        prisma.pedido.update({ where: { id: dados.pedidoId }, data: { status: "RETRABALHO", posicaoFila: null } }),
-      ]);
+      return prisma.$transaction(async (tx) => {
+        const { count } = await tx.pedido.updateMany({
+          where: { id: dados.pedidoId, status: dados.statusOrigem },
+          data: { status: "RETRABALHO", posicaoFila: null },
+        });
+        if (count === 1) {
+          await tx.retrabalho.create({ data: dados });
+        }
+        return count;
+      });
     },
   };
 }

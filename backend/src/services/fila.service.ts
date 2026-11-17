@@ -14,6 +14,12 @@ const TRANSICOES: Record<StatusFila, string[]> = {
 const ORIGENS_RETRABALHO = ["CONCLUIDO", "FATURADO"] as const;
 type OrigemRetrabalho = (typeof ORIGENS_RETRABALHO)[number];
 
+function conferirGravacao({ count }: { count: number }) {
+  if (count !== 1) {
+    throw new PedidoInvalidoError("o pedido mudou de status enquanto era atualizado; atualize a fila");
+  }
+}
+
 export function filaService(prisma: PrismaTenantClient) {
   const repository = filaRepository(prisma);
   const maquinas = maquinaRepository(prisma);
@@ -55,20 +61,20 @@ export function filaService(prisma: PrismaTenantClient) {
 
     if (status === "NA_FILA") {
       if (refazendo) {
-        await repository.voltarParaFila(id, "RETRABALHO", pedido.iniciadoEm);
+        conferirGravacao(await repository.voltarParaFila(id, pedido.status, "RETRABALHO", pedido.iniciadoEm));
       } else {
-        await repository.voltarParaFila(id, "NA_FILA", null);
+        conferirGravacao(await repository.voltarParaFila(id, pedido.status, "NA_FILA", null));
       }
     } else if (status === "CONCLUIDO") {
       if (refazendo) {
         const ultimo = pedido.retrabalhos?.at(-1);
         const statusFinal: OrigemRetrabalho = ultimo?.statusOrigem === "FATURADO" ? "FATURADO" : "CONCLUIDO";
-        await repository.concluir(id, statusFinal, pedido.concluidoEm!);
+        conferirGravacao(await repository.concluir(id, pedido.status, statusFinal, pedido.concluidoEm!));
       } else {
-        await repository.concluir(id, "CONCLUIDO", new Date());
+        conferirGravacao(await repository.concluir(id, pedido.status, "CONCLUIDO", new Date()));
       }
     } else {
-      await repository.iniciarProducao(id, pedido.iniciadoEm ?? new Date());
+      conferirGravacao(await repository.iniciarProducao(id, pedido.status, pedido.iniciadoEm ?? new Date()));
     }
     return buscarPedido(id);
   }
@@ -95,7 +101,7 @@ export function filaService(prisma: PrismaTenantClient) {
       throw new PedidoInvalidoError("pedido nao tem maquina para voltar a fila");
     }
 
-    await repository.registrarRetrabalho({ pedidoId: id, motivo, custoOperacional, statusOrigem });
+    conferirGravacao({ count: await repository.registrarRetrabalho({ pedidoId: id, motivo, custoOperacional, statusOrigem }) });
     return buscarPedido(id);
   }
 

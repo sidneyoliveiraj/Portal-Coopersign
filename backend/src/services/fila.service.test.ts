@@ -11,9 +11,10 @@ function criarPrismaFalso() {
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue({ id: "ped-1", status: "NA_FILA", maquinaId: "maq-1" }),
       update: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     retrabalho: { create: vi.fn() },
-    $transaction: vi.fn().mockResolvedValue([]),
+    $transaction: vi.fn(),
   };
 }
 
@@ -23,6 +24,10 @@ describe("filaService", () => {
 
   beforeEach(() => {
     prisma = criarPrismaFalso();
+    // registrarRetrabalho usa a transacao com callback; definirOrdem, a de lista
+    prisma.$transaction.mockImplementation((arg: unknown) =>
+      typeof arg === "function" ? arg(prisma) : Promise.resolve([]),
+    );
     service = filaService(prisma as unknown as PrismaTenantClient);
   });
 
@@ -49,8 +54,8 @@ describe("filaService", () => {
     it("inicia a producao de um pedido na fila", async () => {
       await service.atualizarStatus("ped-1", { status: "EM_PRODUCAO" });
 
-      expect(prisma.pedido.update).toHaveBeenCalledWith({
-        where: { id: "ped-1" },
+      expect(prisma.pedido.updateMany).toHaveBeenCalledWith({
+        where: { id: "ped-1", status: "NA_FILA" },
         data: { status: "EM_PRODUCAO", iniciadoEm: expect.any(Date) },
       });
     });
@@ -60,8 +65,8 @@ describe("filaService", () => {
       prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "RETRABALHO", iniciadoEm });
       await service.atualizarStatus("ped-1", { status: "EM_PRODUCAO" });
 
-      expect(prisma.pedido.update).toHaveBeenCalledWith({
-        where: { id: "ped-1" },
+      expect(prisma.pedido.updateMany).toHaveBeenCalledWith({
+        where: { id: "ped-1", status: "RETRABALHO" },
         data: { status: "EM_PRODUCAO", iniciadoEm },
       });
     });
@@ -70,8 +75,8 @@ describe("filaService", () => {
       prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "EM_PRODUCAO" });
       await service.atualizarStatus("ped-1", { status: "CONCLUIDO" });
 
-      expect(prisma.pedido.update).toHaveBeenCalledWith({
-        where: { id: "ped-1" },
+      expect(prisma.pedido.updateMany).toHaveBeenCalledWith({
+        where: { id: "ped-1", status: "EM_PRODUCAO" },
         data: { status: "CONCLUIDO", posicaoFila: null, concluidoEm: expect.any(Date) },
       });
     });
@@ -85,8 +90,8 @@ describe("filaService", () => {
       });
       await service.atualizarStatus("ped-1", { status: "NA_FILA" });
 
-      expect(prisma.pedido.update).toHaveBeenCalledWith({
-        where: { id: "ped-1" },
+      expect(prisma.pedido.updateMany).toHaveBeenCalledWith({
+        where: { id: "ped-1", status: "EM_PRODUCAO" },
         data: { status: "NA_FILA", iniciadoEm: null },
       });
     });
@@ -101,8 +106,8 @@ describe("filaService", () => {
       });
       await service.atualizarStatus("ped-1", { status: "NA_FILA" });
 
-      expect(prisma.pedido.update).toHaveBeenCalledWith({
-        where: { id: "ped-1" },
+      expect(prisma.pedido.updateMany).toHaveBeenCalledWith({
+        where: { id: "ped-1", status: "EM_PRODUCAO" },
         data: { status: "RETRABALHO", iniciadoEm },
       });
     });
@@ -123,8 +128,8 @@ describe("filaService", () => {
         });
         await service.atualizarStatus("ped-1", { status: "CONCLUIDO" });
 
-        expect(prisma.pedido.update).toHaveBeenCalledWith({
-          where: { id: "ped-1" },
+        expect(prisma.pedido.updateMany).toHaveBeenCalledWith({
+          where: { id: "ped-1", status: "EM_PRODUCAO" },
           data: { status: statusOrigem, posicaoFila: null, concluidoEm },
         });
       },
@@ -132,7 +137,15 @@ describe("filaService", () => {
 
     it("nao pula etapa de producao", async () => {
       await expect(service.atualizarStatus("ped-1", { status: "CONCLUIDO" })).rejects.toThrow(PedidoInvalidoError);
-      expect(prisma.pedido.update).not.toHaveBeenCalled();
+      expect(prisma.pedido.updateMany).not.toHaveBeenCalled();
+    });
+
+    it("dois cliques ao mesmo tempo: o segundo nao grava por cima", async () => {
+      prisma.pedido.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.atualizarStatus("ped-1", { status: "EM_PRODUCAO" })).rejects.toThrow(
+        "o pedido mudou de status enquanto era atualizado; atualize a fila",
+      );
     });
 
     it.each(["FATURADO", "constructor", undefined])("rejeita status invalido: %s", async (status) => {
@@ -176,10 +189,19 @@ describe("filaService", () => {
       expect(prisma.retrabalho.create).toHaveBeenCalledWith({
         data: { pedidoId: "ped-1", motivo: "lona rasgou", custoOperacional: 29, statusOrigem: status },
       });
-      expect(prisma.pedido.update).toHaveBeenCalledWith({
-        where: { id: "ped-1" },
+      expect(prisma.pedido.updateMany).toHaveBeenCalledWith({
+        where: { id: "ped-1", status },
         data: { status: "RETRABALHO", posicaoFila: null },
       });
+    });
+
+    it("dois cliques no retrabalho: o segundo nao cria outro registro", async () => {
+      prisma.pedido.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.registrarRetrabalho("ped-1", { motivo: "lona rasgou", custoOperacional: 29 }),
+      ).rejects.toThrow("o pedido mudou de status enquanto era atualizado; atualize a fila");
+      expect(prisma.retrabalho.create).not.toHaveBeenCalled();
     });
 
     it.each(["NA_FILA", "EM_PRODUCAO", "RETRABALHO", "AGUARDANDO_VALIDACAO"])(
