@@ -14,6 +14,30 @@ const TRANSICOES: Record<StatusFila, string[]> = {
 const ORIGENS_RETRABALHO = ["CONCLUIDO", "FATURADO"] as const;
 type OrigemRetrabalho = (typeof ORIGENS_RETRABALHO)[number];
 
+type ItemFila = { posicaoFila?: number | null; prazoEntrega?: Date | null };
+
+// RN11 com a ordem manual do gestor (RF23): quem ja tem posicao fica como o gestor deixou, e o pedido
+// que chegou depois (aprovado ou voltando de retrabalho) entra logo apos o ultimo que vence antes ou no
+// mesmo dia que ele. Sem nenhuma posicao manual, a fila ja vem do banco ordenada por prazo.
+export function encaixarPorPrazo<T extends ItemFila>(itens: T[]): T[] {
+  const manuais = itens.filter((item) => item.posicaoFila !== null && item.posicaoFila !== undefined);
+  if (manuais.length === 0) {
+    return itens;
+  }
+  const prazo = (item: T) => item.prazoEntrega?.getTime() ?? Infinity;
+  const fila = [...manuais];
+  for (const novo of itens.filter((item) => !manuais.includes(item))) {
+    let destino = 0;
+    fila.forEach((item, indice) => {
+      if (prazo(item) <= prazo(novo)) {
+        destino = indice + 1;
+      }
+    });
+    fila.splice(destino, 0, novo);
+  }
+  return fila;
+}
+
 function conferirGravacao({ count }: { count: number }) {
   if (count !== 1) {
     throw new PedidoInvalidoError("o pedido mudou de status enquanto era atualizado; atualize a fila");
@@ -41,7 +65,7 @@ export function filaService(prisma: PrismaTenantClient) {
       repository.listarFila(maquinaId),
       repository.listarConcluidos(maquinaId),
     ]);
-    return { fila, concluidos };
+    return { fila: encaixarPorPrazo(fila), concluidos };
   }
 
   async function atualizarStatus(id: string, dados: Record<string, unknown>) {
@@ -116,7 +140,7 @@ export function filaService(prisma: PrismaTenantClient) {
       throw new PedidoInvalidoError("pedido nao esta em uma fila");
     }
 
-    const ids = (await repository.listarFila(pedido.maquinaId)).map((item) => item.id);
+    const ids = encaixarPorPrazo(await repository.listarFila(pedido.maquinaId)).map((item) => item.id);
     const atual = ids.indexOf(id);
     if (atual === -1) {
       throw new PedidoInvalidoError("pedido nao esta em uma fila");

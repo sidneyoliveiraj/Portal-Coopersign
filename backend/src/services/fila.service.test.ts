@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { filaService } from "./fila.service";
+import { encaixarPorPrazo, filaService } from "./fila.service";
 import { PedidoInvalidoError, PedidoNaoEncontradoError } from "./pedido.service";
 import { MaquinaNaoEncontradaError } from "./maquina.service";
 import { PrismaTenantClient } from "../lib/prisma-tenant";
@@ -274,6 +274,45 @@ describe("filaService", () => {
 
     it.each([0, -1, 1.5, "1", undefined])("rejeita posicao invalida: %s", async (posicao) => {
       await expect(service.mover("ped-1", { posicao })).rejects.toThrow("posicao deve ser um numero inteiro");
+    });
+  });
+
+  describe("encaixarPorPrazo (RN11 junto com a ordem manual)", () => {
+    const dia = (d: number) => new Date(`2026-11-${String(d).padStart(2, "0")}T12:00:00Z`);
+    const nomes = (itens: { id: string }[]) => itens.map((item) => item.id);
+
+    // o gestor colocou o Savio (25/11) na frente; a fila manual ficou Savio, Charles, Top Birds
+    const manual = [
+      { id: "savio", posicaoFila: 0, prazoEntrega: dia(25) },
+      { id: "charles", posicaoFila: 1, prazoEntrega: dia(20) },
+      { id: "topbirds", posicaoFila: 2, prazoEntrega: dia(22) },
+    ];
+
+    it("sem ordem manual, mantem a ordem por prazo que veio do banco", () => {
+      const itens = [
+        { id: "a", posicaoFila: null, prazoEntrega: dia(19) },
+        { id: "b", posicaoFila: null, prazoEntrega: dia(21) },
+      ];
+      expect(encaixarPorPrazo(itens)).toBe(itens);
+    });
+
+    it("pedido que vence antes de todos entra em primeiro, mesmo depois de um mover", () => {
+      const fila = encaixarPorPrazo([...manual, { id: "amais", posicaoFila: null, prazoEntrega: dia(19) }]);
+      expect(nomes(fila)).toEqual(["amais", "savio", "charles", "topbirds"]);
+    });
+
+    it("entra logo depois do ultimo que vence antes ou no mesmo dia", () => {
+      const fila = encaixarPorPrazo([
+        ...manual,
+        { id: "dia21", posicaoFila: null, prazoEntrega: dia(21) },
+        { id: "dia30", posicaoFila: null, prazoEntrega: dia(30) },
+      ]);
+      expect(nomes(fila)).toEqual(["savio", "charles", "dia21", "topbirds", "dia30"]);
+    });
+
+    it("retrabalho segue a mesma regra; se precisar passar na frente, o gestor usa o mover", () => {
+      const fila = encaixarPorPrazo([...manual, { id: "retrabalho", posicaoFila: null, prazoEntrega: dia(20) }]);
+      expect(nomes(fila)).toEqual(["savio", "charles", "retrabalho", "topbirds"]);
     });
   });
 });
