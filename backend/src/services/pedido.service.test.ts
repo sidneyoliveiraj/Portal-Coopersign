@@ -1,0 +1,338 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { pedidoService, PedidoInvalidoError, PedidoNaoEncontradoError } from "./pedido.service";
+import { PrismaTenantClient } from "../lib/prisma-tenant";
+
+function criarPrismaFalso() {
+  return {
+    cliente: { findUnique: vi.fn().mockResolvedValue({ id: "cli-1" }) },
+    material: { findUnique: vi.fn().mockResolvedValue({ id: "mat-1", precoM2: "45.50" }) },
+    servicoAdicional: {
+      findUnique: vi.fn().mockResolvedValue({ id: "srv-1", valorPadrao: "12.00" }),
+    },
+    maquina: { findUnique: vi.fn().mockResolvedValue({ id: "maq-1", status: "ATIVA" }) },
+    pedido: {
+      create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ id: "ped-1", ...data })),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    ajusteValor: { create: vi.fn() },
+    $transaction: vi.fn().mockResolvedValue([]),
+  };
+}
+
+const pedidoValido = {
+  clienteId: "cli-1",
+  materialId: "mat-1",
+  largura: 1.5,
+  altura: 2.2,
+  quantidade: 3,
+  acabamento: "ilhos nos cantos",
+  arquivoUrl: "https://drive.google.com/arte.pdf",
+  prazoEntrega: "2026-11-10",
+};
+
+describe("pedidoService.criar", () => {
+  let prisma: ReturnType<typeof criarPrismaFalso>;
+
+  beforeEach(() => {
+    prisma = criarPrismaFalso();
+  });
+
+  it("calcula metragem, valor base e valor total a partir do material", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar(pedidoValido);
+
+    expect(pedido.metragemTotal).toBe(9.9);
+    expect(pedido.valorBase).toBe(450.45);
+    expect(pedido.valorTotal).toBe(450.45);
+    expect(pedido.status).toBe("AGUARDANDO_VALIDACAO");
+    expect(pedido.formaPagamento).toBe("A_VISTA");
+  });
+
+  it("cobra o minimo de 1 m2 por unidade e guarda a metragem real", async () => {
+    prisma.material.findUnique.mockResolvedValue({ id: "mat-1", precoM2: "29.00" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar({ ...pedidoValido, largura: 1.1, altura: 0.8, quantidade: 4 });
+
+    expect(pedido.metragemTotal).toBe(3.52);
+    expect(pedido.valorBase).toBe(116);
+    expect(pedido.valorTotal).toBe(116);
+  });
+
+  it("calcula medidas com milimetros sem arredondar antes da conta", async () => {
+    prisma.material.findUnique.mockResolvedValue({ id: "mat-1", precoM2: "29.00" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar({ ...pedidoValido, largura: 1.175, altura: 1.861, quantidade: 1 });
+
+    expect(pedido.valorBase).toBe(63.41);
+  });
+
+  it("arredonda meio centavo para cima", async () => {
+    prisma.material.findUnique.mockResolvedValue({ id: "mat-1", precoM2: "29.00" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar({ ...pedidoValido, largura: 0.94, altura: 1.25, quantidade: 1 });
+
+    expect(pedido.valorBase).toBe(34.08);
+  });
+
+  it("soma servicos adicionais pelo valor padrao vezes a quantidade", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar({
+      ...pedidoValido,
+      servicos: [{ servicoAdicionalId: "srv-1", quantidade: 4 }],
+    });
+
+    expect(pedido.valorTotal).toBe(498.45);
+    expect(pedido.pedidoServicos).toEqual({
+      create: [{ servicoAdicionalId: "srv-1", quantidade: 4, valorUnitario: 12 }],
+    });
+  });
+
+  it("rejeita pedido sem campo obrigatorio", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const { arquivoUrl, ...semArquivo } = pedidoValido;
+
+    await expect(service.criar(semArquivo)).rejects.toThrow(PedidoInvalidoError);
+    expect(prisma.pedido.create).not.toHaveBeenCalled();
+  });
+
+  it("registra 'Sem acabamento' quando o campo fica em branco", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    const pedido = await service.criar({ ...pedidoValido, acabamento: "  " });
+
+    expect(pedido.acabamento).toBe("Sem acabamento");
+  });
+
+  it("rejeita dimensao invalida antes de consultar o banco", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.criar({ ...pedidoValido, largura: -1 })).rejects.toThrow(PedidoInvalidoError);
+    expect(prisma.material.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("rejeita material que nao existe na organizacao", async () => {
+    prisma.material.findUnique.mockResolvedValue(null);
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.criar(pedidoValido)).rejects.toThrow("material nao encontrado");
+  });
+
+  it("rejeita forma de pagamento desconhecida", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.criar({ ...pedidoValido, formaPagamento: "PIX" })).rejects.toThrow(
+      PedidoInvalidoError,
+    );
+  });
+});
+
+describe("pedidoService validacao tecnica", () => {
+  let prisma: ReturnType<typeof criarPrismaFalso>;
+
+  beforeEach(() => {
+    prisma = criarPrismaFalso();
+    prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "AGUARDANDO_VALIDACAO" });
+  });
+
+  it("aprova e envia para a fila da maquina (RF13, RN01)", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    await service.aprovar("ped-1", { maquinaId: "maq-1", observacaoTecnica: "  sangria ok  " });
+
+    expect(prisma.pedido.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ped-1" },
+        data: {
+          status: "NA_FILA",
+          maquinaId: "maq-1",
+          observacaoTecnica: "sangria ok",
+          motivoRejeicao: null,
+        },
+      }),
+    );
+  });
+
+  it("exige maquina para aprovar", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.aprovar("ped-1", {})).rejects.toThrow("maquinaId e obrigatorio");
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("nao envia para maquina em manutencao (RN12)", async () => {
+    prisma.maquina.findUnique.mockResolvedValue({ id: "maq-1", status: "EM_MANUTENCAO" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.aprovar("ped-1", { maquinaId: "maq-1" })).rejects.toThrow(
+      "maquina em manutencao ou inativa nao recebe pedidos",
+    );
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("rejeita maquina de outra organizacao", async () => {
+    prisma.maquina.findUnique.mockResolvedValue(null);
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.aprovar("ped-1", { maquinaId: "maq-x" })).rejects.toThrow(
+      "maquina nao encontrada",
+    );
+  });
+
+  it("nao aprova pedido que nao esta aguardando validacao", async () => {
+    prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "REJEITADO" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.aprovar("ped-1", { maquinaId: "maq-1" })).rejects.toThrow(
+      "pedido nao esta aguardando validacao",
+    );
+  });
+
+  it("exige justificativa para rejeitar (RF14)", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.rejeitar("ped-1", { justificativa: "   " })).rejects.toThrow(
+      "justificativa e obrigatorio",
+    );
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("rejeita guardando a justificativa", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    await service.rejeitar("ped-1", { justificativa: "arquivo em baixa resolucao" });
+
+    expect(prisma.pedido.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          status: "REJEITADO",
+          motivoRejeicao: "arquivo em baixa resolucao",
+          observacaoTecnica: null,
+        },
+      }),
+    );
+  });
+});
+
+describe("pedidoService.ajustarValor", () => {
+  let prisma: ReturnType<typeof criarPrismaFalso>;
+
+  beforeEach(() => {
+    prisma = criarPrismaFalso();
+    prisma.pedido.findUnique.mockResolvedValue({
+      id: "ped-1",
+      status: "AGUARDANDO_VALIDACAO",
+      valorTotal: "450.45",
+    });
+  });
+
+  it("exige justificativa (RN13)", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.ajustarValor("ped-1", { valor: -50 })).rejects.toThrow(
+      "justificativa e obrigatorio",
+    );
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("registra o ajuste e recalcula o valor total na mesma transacao", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+    await service.ajustarValor("ped-1", { valor: -50.45, justificativa: "desconto cliente antigo" });
+
+    expect(prisma.ajusteValor.create).toHaveBeenCalledWith({
+      data: { pedidoId: "ped-1", descricao: "desconto cliente antigo", valor: -50.45 },
+    });
+    expect(prisma.pedido.update).toHaveBeenCalledWith({
+      where: { id: "ped-1" },
+      data: { valorTotal: 400 },
+    });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("nao deixa o valor total ficar negativo", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(
+      service.ajustarValor("ped-1", { valor: -500, justificativa: "erro de digitacao" }),
+    ).rejects.toThrow("ajuste deixaria o valor total negativo");
+  });
+
+  it("bloqueia ajuste em pedido faturado", async () => {
+    prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "FATURADO", valorTotal: "450.45" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(
+      service.ajustarValor("ped-1", { valor: 10, justificativa: "frete" }),
+    ).rejects.toThrow(PedidoInvalidoError);
+  });
+
+  it("retorna nao encontrado para pedido de outra organizacao", async () => {
+    prisma.pedido.findUnique.mockResolvedValue(null);
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(
+      service.ajustarValor("ped-x", { valor: 10, justificativa: "frete" }),
+    ).rejects.toThrow(PedidoNaoEncontradoError);
+  });
+});
+
+describe("pedidoService.alterarFormaPagamento (RN07)", () => {
+  let prisma: ReturnType<typeof criarPrismaFalso>;
+
+  beforeEach(() => {
+    prisma = criarPrismaFalso();
+    prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "CONCLUIDO", formaPagamento: "A_VISTA" });
+    prisma.pedido.update.mockResolvedValue({ id: "ped-1", status: "CONCLUIDO", formaPagamento: "EM_CONTA" });
+  });
+
+  it("muda de a vista para em conta", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    const pedido = await service.alterarFormaPagamento("ped-1", { formaPagamento: "EM_CONTA" });
+
+    expect(prisma.pedido.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "ped-1" }, data: { formaPagamento: "EM_CONTA" } }),
+    );
+    expect(pedido.formaPagamento).toBe("EM_CONTA");
+  });
+
+  it("exige a forma de pagamento", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.alterarFormaPagamento("ped-1", {})).rejects.toThrow("formaPagamento e obrigatorio");
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("recusa forma de pagamento desconhecida", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.alterarFormaPagamento("ped-1", { formaPagamento: "PIX" })).rejects.toThrow(
+      "formaPagamento deve ser A_VISTA ou EM_CONTA",
+    );
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("bloqueia pedido ja faturado", async () => {
+    prisma.pedido.findUnique.mockResolvedValue({ id: "ped-1", status: "FATURADO", formaPagamento: "EM_CONTA" });
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.alterarFormaPagamento("ped-1", { formaPagamento: "A_VISTA" })).rejects.toThrow(
+      "pedido ja faturado nao pode mudar a forma de pagamento",
+    );
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("nao grava nada quando a forma ja e a mesma", async () => {
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await service.alterarFormaPagamento("ped-1", { formaPagamento: "A_VISTA" });
+
+    expect(prisma.pedido.update).not.toHaveBeenCalled();
+  });
+
+  it("retorna nao encontrado para pedido de outra organizacao", async () => {
+    prisma.pedido.findUnique.mockResolvedValue(null);
+    const service = pedidoService(prisma as unknown as PrismaTenantClient);
+
+    await expect(service.alterarFormaPagamento("ped-x", { formaPagamento: "EM_CONTA" })).rejects.toThrow(
+      PedidoNaoEncontradoError,
+    );
+  });
+});

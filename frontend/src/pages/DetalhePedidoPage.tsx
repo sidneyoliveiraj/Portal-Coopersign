@@ -1,0 +1,322 @@
+import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import {
+  Alert,
+  Anchor,
+  Badge,
+  Button,
+  Grid,
+  Group,
+  Loader,
+  NumberInput,
+  Paper,
+  Select,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
+import { api } from "../api";
+import { useConfirmacao } from "../confirmacao";
+import { useAtualizacoesDePedidos } from "../tempoReal";
+import { useAuth } from "../auth";
+import { FormRetrabalho } from "../components/FormRetrabalho";
+import { ReferenciaArquivo } from "../components/ReferenciaArquivo";
+import type { Pedido } from "../tipos";
+import {
+  FORMA_PAGAMENTO,
+  formatarData,
+  formatarDimensoes,
+  formatarMetragem,
+  formatarMoeda,
+  formatarMomento,
+  STATUS_PEDIDO,
+} from "../formato";
+
+function Campo({ rotulo, valor }: { rotulo: string; valor: ReactNode }) {
+  return (
+    <div>
+      <Text size="xs" c="dimmed">
+        {rotulo}
+      </Text>
+      <Text size="sm">{valor}</Text>
+    </div>
+  );
+}
+
+export function DetalhePedidoPage() {
+  const { id } = useParams();
+  const { usuario } = useAuth();
+  const confirmar = useConfirmacao();
+  const [pedido, setPedido] = useState<Pedido | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const [valorAjuste, setValorAjuste] = useState<number | string>("");
+  const [justificativa, setJustificativa] = useState("");
+  const [erroAjuste, setErroAjuste] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const [erroPagamento, setErroPagamento] = useState<string | null>(null);
+  const [abrirRetrabalho, setAbrirRetrabalho] = useState(false);
+
+  const carregar = useCallback(() => {
+    api<{ pedido: Pedido }>(`/pedidos/${id}`)
+      .then(({ pedido }) => setPedido(pedido))
+      .catch((e) => setErro(e.message));
+  }, [id]);
+
+  useAtualizacoesDePedidos(carregar);
+
+  useEffect(carregar, [carregar]);
+
+  async function registrarAjuste(evento: FormEvent) {
+    evento.preventDefault();
+    setErroAjuste(null);
+    setSalvando(true);
+    try {
+      const resposta = await api<{ pedido: Pedido }>(`/pedidos/${id}/ajustes`, {
+        metodo: "POST",
+        corpo: { valor: valorAjuste, justificativa },
+      });
+      setPedido(resposta.pedido);
+      setValorAjuste("");
+      setJustificativa("");
+    } catch (e) {
+      setErroAjuste(e instanceof Error ? e.message : "erro ao registrar ajuste");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  // RN07: o gestor muda a forma de pagamento depois, com confirmação.
+  async function alterarFormaPagamento(nova: string | null) {
+    if (!pedido || !nova || nova === pedido.formaPagamento) {
+      return;
+    }
+    const confirmado = await confirmar({
+      titulo: "Forma de pagamento",
+      mensagem: `Mudar a forma de pagamento para "${FORMA_PAGAMENTO[nova]}"?`,
+      rotuloConfirmar: "Mudar",
+    });
+    if (!confirmado) {
+      return;
+    }
+    setErroPagamento(null);
+    try {
+      const resposta = await api<{ pedido: Pedido }>(`/pedidos/${id}/forma-pagamento`, {
+        metodo: "PATCH",
+        corpo: { formaPagamento: nova },
+      });
+      setPedido(resposta.pedido);
+    } catch (e) {
+      setErroPagamento(e instanceof Error ? e.message : "erro ao mudar a forma de pagamento");
+    }
+  }
+
+  if (erro) {
+    return <Alert color="red">{erro}</Alert>;
+  }
+  if (!pedido) {
+    return <Loader />;
+  }
+
+  const status = STATUS_PEDIDO[pedido.status];
+  const podeAjustar =
+    (usuario?.perfil === "ADMINISTRADOR" || usuario?.perfil === "GESTOR") && pedido.status !== "FATURADO";
+  const servicos = pedido.pedidoServicos ?? [];
+  const ajustes = pedido.ajustesValor ?? [];
+  const retrabalhos = pedido.retrabalhos ?? [];
+  const podeRetrabalho =
+    usuario?.perfil !== "CLIENTE" && (pedido.status === "CONCLUIDO" || pedido.status === "FATURADO");
+
+  return (
+    <>
+      <Anchor component={Link} to="/pedidos" size="sm">
+        Voltar para pedidos
+      </Anchor>
+
+      <Group justify="space-between" mt="xs" mb="md">
+        <Title order={3}>Pedido de {pedido.cliente.nome}</Title>
+        <Group gap="sm">
+          {podeRetrabalho && (
+            <Button variant="default" size="xs" onClick={() => setAbrirRetrabalho(true)}>
+              Retrabalho
+            </Button>
+          )}
+          <Button component={Link} to={`/pedidos/${pedido.id}/comprovante`} variant="default" size="xs">
+            Comprovante
+          </Button>
+          <Badge color={status.cor} variant="light" size="lg">
+            {status.rotulo}
+          </Badge>
+        </Group>
+      </Group>
+
+      <Grid gutter="lg">
+        <Grid.Col span={{ base: 12, md: 8 }}>
+          <Stack>
+            <Paper withBorder p="md">
+              <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="md">
+                <Campo rotulo="Material" valor={pedido.material.tipo} />
+                <Campo
+                  rotulo="Dimensões"
+                  valor={formatarDimensoes(pedido)}
+                />
+                <Campo rotulo="Quantidade" valor={pedido.quantidade} />
+                <Campo rotulo="Acabamento" valor={pedido.acabamento} />
+                <Campo rotulo="Data de entrada" valor={formatarMomento(pedido.criadoEm)} />
+                <Campo rotulo="Prazo de entrega" valor={formatarData(pedido.prazoEntrega)} />
+                {podeAjustar ? (
+                  <Select
+                    label="Pagamento"
+                    size="xs"
+                    allowDeselect={false}
+                    data={Object.entries(FORMA_PAGAMENTO).map(([value, label]) => ({ value, label }))}
+                    value={pedido.formaPagamento}
+                    onChange={alterarFormaPagamento}
+                    error={erroPagamento}
+                  />
+                ) : (
+                  <Campo rotulo="Pagamento" valor={FORMA_PAGAMENTO[pedido.formaPagamento]} />
+                )}
+                <Campo
+                  rotulo="Arquivo de arte"
+                  valor={<ReferenciaArquivo referencia={pedido.arquivoUrl} />}
+                />
+                {pedido.maquina && <Campo rotulo="Máquina" valor={pedido.maquina.nome} />}
+                {pedido.observacaoTecnica && <Campo rotulo="Observações técnicas" valor={pedido.observacaoTecnica} />}
+                {pedido.motivoRejeicao && <Campo rotulo="Motivo da rejeição" valor={pedido.motivoRejeicao} />}
+              </SimpleGrid>
+            </Paper>
+
+            {servicos.length > 0 && (
+              <Paper withBorder p="md">
+                <Text fw={600} mb="xs">
+                  Serviços adicionais
+                </Text>
+                <Table>
+                  <Table.Tbody>
+                    {servicos.map((s) => (
+                      <Table.Tr key={s.id}>
+                        <Table.Td>{s.servicoAdicional.descricao}</Table.Td>
+                        <Table.Td>{s.quantidade} ×</Table.Td>
+                        <Table.Td ta="right">{formatarMoeda(Number(s.valorUnitario) * s.quantidade)}</Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Paper>
+            )}
+
+            {retrabalhos.length > 0 && (
+              <Paper withBorder p="md">
+                <Text fw={600} mb="xs">
+                  Retrabalhos
+                </Text>
+                <Table>
+                  <Table.Tbody>
+                    {retrabalhos.map((r) => (
+                      <Table.Tr key={r.id}>
+                        <Table.Td>{formatarMomento(r.criadoEm)}</Table.Td>
+                        <Table.Td>{r.motivo}</Table.Td>
+                        <Table.Td ta="right">{formatarMoeda(r.custoOperacional)}</Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Paper>
+            )}
+
+            <Paper withBorder p="md">
+              <Text fw={600} mb="xs">
+                Ajustes de valor
+              </Text>
+              {ajustes.length === 0 ? (
+                <Text size="sm" c="dimmed">
+                  Nenhum ajuste registrado.
+                </Text>
+              ) : (
+                <Table>
+                  <Table.Tbody>
+                    {ajustes.map((a) => (
+                      <Table.Tr key={a.id}>
+                        <Table.Td>{formatarMomento(a.criadoEm)}</Table.Td>
+                        <Table.Td>{a.descricao}</Table.Td>
+                        <Table.Td ta="right" c={Number(a.valor) < 0 ? "red" : undefined}>
+                          {formatarMoeda(a.valor)}
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              )}
+
+              {podeAjustar && (
+                <form onSubmit={registrarAjuste}>
+                  <Stack mt="md" gap="sm">
+                    {erroAjuste && <Alert color="red">{erroAjuste}</Alert>}
+                    <Group align="flex-end" grow>
+                      <NumberInput
+                        label="Valor (negativo para desconto)"
+                        required
+                        decimalScale={2}
+                        decimalSeparator=","
+                        value={valorAjuste}
+                        onChange={setValorAjuste}
+                      />
+                      <TextInput
+                        label="Justificativa"
+                        required
+                        value={justificativa}
+                        onChange={(e) => setJustificativa(e.currentTarget.value)}
+                      />
+                    </Group>
+                    <Group justify="flex-end">
+                      <Button type="submit" variant="default" loading={salvando}>
+                        Registrar ajuste
+                      </Button>
+                    </Group>
+                  </Stack>
+                </form>
+              )}
+            </Paper>
+          </Stack>
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Paper withBorder p="md">
+            <Stack gap={6}>
+              <Group justify="space-between">
+                <Text size="sm" c="dimmed">
+                  Metragem
+                </Text>
+                <Text size="sm">{formatarMetragem(pedido)}</Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="sm" c="dimmed">
+                  Valor base
+                </Text>
+                <Text size="sm">{formatarMoeda(pedido.valorBase)}</Text>
+              </Group>
+              <Group justify="space-between" pt={4} style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}>
+                <Text fw={600}>Total</Text>
+                <Text fw={600}>{formatarMoeda(pedido.valorTotal)}</Text>
+              </Group>
+            </Stack>
+          </Paper>
+        </Grid.Col>
+      </Grid>
+      {abrirRetrabalho && (
+        <FormRetrabalho
+          pedido={pedido}
+          aoFechar={() => setAbrirRetrabalho(false)}
+          aoSalvar={() => {
+            setAbrirRetrabalho(false);
+            carregar();
+          }}
+        />
+      )}
+    </>
+  );
+}

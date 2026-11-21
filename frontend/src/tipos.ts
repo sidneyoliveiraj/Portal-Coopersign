@@ -1,0 +1,66 @@
+export type Cliente = { id: string; nome: string };
+
+export type Material = { id: string; tipo: string; precoM2: string };
+
+export type ServicoAdicional = { id: string; descricao: string; valorPadrao: string };
+
+export type Maquina = { id: string; nome: string; tipo: string; status: string };
+
+export type AjusteValor = { id: string; descricao: string; valor: string; criadoEm: string };
+
+export type PedidoDoCliente = {
+  id: string;
+  status: string;
+  largura: string;
+  altura: string;
+  quantidade: number;
+  acabamento: string;
+  formaPagamento: string;
+  prazoEntrega: string;
+  metragemTotal: string;
+  valorTotal: string;
+  motivoRejeicao: string | null;
+  criadoEm: string;
+  concluidoEm: string | null;
+  material: { tipo: string };
+};
+
+export type Retrabalho = {
+  id: string;
+  motivo: string;
+  custoOperacional: string;
+  statusOrigem: "CONCLUIDO" | "FATURADO";
+  criadoEm: string;
+};
+
+export type Pedido = {
+  id: string;
+  status: string;
+  largura: string;
+  altura: string;
+  quantidade: number;
+  acabamento: string;
+  arquivoUrl: string;
+  formaPagamento: string;
+  prazoEntrega: string;
+  metragemTotal: string;
+  valorBase: string;
+  valorTotal: string;
+  criadoEm: string;
+  iniciadoEm?: string | null;
+  concluidoEm?: string | null;
+  cliente: Cliente;
+  material: Material;
+  maquina?: Maquina | null;
+  observacaoTecnica?: string | null;
+  motivoRejeicao?: string | null;
+  pedidoServicos?: {
+    id: string;
+    quantidade: number;
+    valorUnitario: string;
+    servicoAdicional: ServicoAdicional;
+  }[];
+  ajustesValor?: AjusteValor[];
+  retrabalhos?: Retrabalho[];
+  _count?: { retrabalhos: number };
+};

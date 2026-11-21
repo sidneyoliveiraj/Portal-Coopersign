@@ -1,0 +1,77 @@
+import { type FormEvent, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Alert, Anchor, Button, Center, Paper, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core";
+import { ErroApi } from "../api";
+import { useAuth } from "../auth";
+import { Logo } from "../components/Logo";
+
+export function LoginPage() {
+  const { entrar } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  async function enviar(evento: FormEvent) {
+    evento.preventDefault();
+    setErro(null);
+    setEnviando(true);
+    try {
+      await entrar(email, senha);
+      // A página inicial de cada perfil é decidida no App.tsx.
+      navigate("/");
+    } catch (e) {
+      setErro(
+        e instanceof ErroApi && e.status === 403
+          ? "Sua conta está inativa ou aguardando aprovação do gestor."
+          : "E-mail ou senha incorretos.",
+      );
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <Center h="100vh" bg="coopersign.6">
+      <Paper withBorder p="xl" radius="md" w={380}>
+        <form onSubmit={enviar}>
+          <Stack>
+            <Center>
+              <Logo tamanho={88} />
+            </Center>
+            <div>
+              <Title order={3}>Portal Coopersign</Title>
+              <Text size="sm" c="dimmed">
+                Entre com seu e-mail e senha
+              </Text>
+            </div>
+            {erro && <Alert color="red">{erro}</Alert>}
+            <TextInput
+              label="E-mail"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.currentTarget.value)}
+            />
+            <PasswordInput
+              label="Senha"
+              required
+              value={senha}
+              onChange={(e) => setSenha(e.currentTarget.value)}
+            />
+            <Button type="submit" loading={enviando}>
+              Entrar
+            </Button>
+            <Anchor component={Link} to="/esqueci-senha" size="sm">
+              Esqueci minha senha
+            </Anchor>
+            <Anchor component={Link} to="/cadastro" size="sm">
+              Sou cliente e quero criar uma conta
+            </Anchor>
+          </Stack>
+        </form>
+      </Paper>
+    </Center>
+  );
+}

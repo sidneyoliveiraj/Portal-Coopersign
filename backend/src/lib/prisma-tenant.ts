@@ -7,6 +7,7 @@ const MODELOS_MULTI_TENANT = new Set([
   "Material",
   "ServicoAdicional",
   "Pedido",
+  "TokenAcesso",
 ]);
 
 const OPERACOES_COM_WHERE = [
@@ -47,6 +48,11 @@ export function prismaTenant(organizacaoId: string) {
 
           if (operation === "create") {
             argsComTenant.data = { ...argsComTenant.data, organizacaoId };
+          }
+
+          if (operation === "update" || operation === "updateMany") {
+            const { organizacaoId: _ignorado, ...dadosSemOrganizacao } = argsComTenant.data ?? {};
+            argsComTenant.data = dadosSemOrganizacao;
           }
 
           return query(argsComTenant);

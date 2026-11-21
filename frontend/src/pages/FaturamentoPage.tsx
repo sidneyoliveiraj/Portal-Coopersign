@@ -1,0 +1,254 @@
+import { type FormEvent, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Alert, Anchor, Button, Group, Paper, Select, Table, Text, TextInput, Title } from "@mantine/core";
+import { api } from "../api";
+import { useConfirmacao } from "../confirmacao";
+import { Logo } from "../components/Logo";
+import type { Cliente, Pedido } from "../tipos";
+import { formatarData, formatarMedidas, formatarMoeda, formatarMomento, inicioDoMes, hojeIso } from "../formato";
+
+type Conta = { pedidos: Pedido[]; total: number };
+type ContasAbertas = {
+  clientes: { clienteId: string; nome: string; quantidade: number; total: number }[];
+  total: number;
+};
+
+const ESTILO_IMPRESSAO = `
+  .so-impressao { display: none; }
+  @media print {
+    .nao-imprimir, .mantine-AppShell-header, .mantine-AppShell-navbar { display: none !important; }
+    .so-impressao { display: block !important; }
+    .mantine-AppShell-main { padding: 0 !important; min-height: 0 !important; }
+  }
+`;
+
+export function FaturamentoPage() {
+  const confirmar = useConfirmacao();
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clienteId, setClienteId] = useState<string | null>(null);
+  const [inicio, setInicio] = useState(inicioDoMes());
+  const [fim, setFim] = useState(hojeIso());
+  const [conta, setConta] = useState<Conta | null>(null);
+  const [contas, setContas] = useState<ContasAbertas | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [fechando, setFechando] = useState(false);
+
+  useEffect(() => {
+    api<{ clientes: Cliente[] }>("/clientes")
+      .then(({ clientes }) => setClientes(clientes))
+      .catch((e) => setErro(e.message));
+  }, []);
+
+  async function buscar(evento?: FormEvent, cliente: string | null = clienteId) {
+    evento?.preventDefault();
+    setErro(null);
+    setAviso(null);
+    setConta(null);
+    setContas(null);
+    try {
+      if (cliente) {
+        const parametros = new URLSearchParams({ clienteId: cliente, inicio, fim });
+        setConta(await api<Conta>(`/faturamento/conta?${parametros}`));
+      } else {
+        setContas(await api<ContasAbertas>(`/faturamento/contas?${new URLSearchParams({ inicio, fim })}`));
+      }
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "erro ao buscar a conta");
+    }
+  }
+
+  function verCliente(id: string) {
+    setClienteId(id);
+    buscar(undefined, id);
+  }
+
+  async function fechar() {
+    if (!conta) {
+      return;
+    }
+    const cliente = clientes.find((c) => c.id === clienteId);
+    const confirmado = await confirmar({
+      titulo: "Fechar conta",
+      mensagem: `Fechar a conta de ${cliente?.nome ?? "cliente"} no valor de ${formatarMoeda(conta.total)}? Os pedidos passam para faturado.`,
+      rotuloConfirmar: "Fechar conta",
+    });
+    if (!confirmado) {
+      return;
+    }
+    setErro(null);
+    setFechando(true);
+    try {
+      const resultado = await api<{ quantidade: number; total: number }>("/faturamento/conta/fechar", {
+        metodo: "POST",
+        corpo: { clienteId, inicio, fim },
+      });
+      setConta(null);
+      setAviso(`Conta fechada: ${resultado.quantidade} pedido(s), total de ${formatarMoeda(resultado.total)}.`);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "erro ao fechar a conta");
+    } finally {
+      setFechando(false);
+    }
+  }
+
+  function trocarFiltro(aplicar: () => void) {
+    aplicar();
+    setConta(null);
+    setContas(null);
+    setAviso(null);
+  }
+
+  const nomeCliente = clientes.find((c) => c.id === clienteId)?.nome;
+
+  return (
+    <>
+      <style>{ESTILO_IMPRESSAO}</style>
+
+      <div className="so-impressao">
+        <Group gap="md" mb="md">
+          <Logo tamanho={56} />
+          <div>
+            <Title order={3}>Conta em aberto</Title>
+            <Text size="sm">{nomeCliente}</Text>
+            <Text size="sm" c="dimmed">
+              Pedidos concluídos de {formatarData(inicio)} a {formatarData(fim)}
+            </Text>
+          </div>
+        </Group>
+      </div>
+
+      <Title order={3} mb="md" className="nao-imprimir">
+        Fechamento de conta
+      </Title>
+
+      <Paper withBorder p="md" mb="md" className="nao-imprimir">
+        <form onSubmit={buscar}>
+          <Group align="flex-end">
+            <Select
+              label="Cliente"
+              placeholder="Todos os clientes"
+              searchable
+              clearable
+              style={{ flex: 1 }}
+              data={clientes.map((c) => ({ value: c.id, label: c.nome }))}
+              value={clienteId}
+              onChange={(valor) => trocarFiltro(() => setClienteId(valor))}
+            />
+            <TextInput
+              label="De"
+              type="date"
+              required
+              value={inicio}
+              onChange={(e) => {
+                const valor = e.currentTarget.value;
+                trocarFiltro(() => setInicio(valor));
+              }}
+            />
+            <TextInput
+              label="Até"
+              type="date"
+              required
+              value={fim}
+              onChange={(e) => {
+                const valor = e.currentTarget.value;
+                trocarFiltro(() => setFim(valor));
+              }}
+            />
+            <Button type="submit">{clienteId ? "Ver conta" : "Buscar contas em aberto"}</Button>
+          </Group>
+        </form>
+      </Paper>
+
+      {erro && (
+        <Alert color="red" mb="md">
+          {erro}
+        </Alert>
+      )}
+      {aviso && (
+        <Alert color="green" mb="md">
+          {aviso}
+        </Alert>
+      )}
+
+      {contas?.clientes.length === 0 && <Text c="dimmed">Nenhum cliente com conta em aberto até o fim deste período.</Text>}
+
+      {contas && contas.clientes.length > 0 && (
+        <Table withTableBorder mb="md" className="nao-imprimir">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Cliente</Table.Th>
+              <Table.Th ta="right">Pedidos</Table.Th>
+              <Table.Th ta="right">Em aberto</Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {contas.clientes.map((linha) => (
+              <Table.Tr key={linha.clienteId}>
+                <Table.Td>{linha.nome}</Table.Td>
+                <Table.Td ta="right">{linha.quantidade}</Table.Td>
+                <Table.Td ta="right">{formatarMoeda(linha.total)}</Table.Td>
+                <Table.Td ta="right">
+                  <Button size="xs" variant="default" onClick={() => verCliente(linha.clienteId)}>
+                    Ver conta
+                  </Button>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+          <Table.Tfoot>
+            <Table.Tr>
+              <Table.Th>Total em aberto</Table.Th>
+              <Table.Th />
+              <Table.Th ta="right">{formatarMoeda(contas.total)}</Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Tfoot>
+        </Table>
+      )}
+
+      {conta?.pedidos.length === 0 && <Text c="dimmed">Nenhum pedido em conta em aberto até o fim deste período.</Text>}
+
+      {conta && conta.pedidos.length > 0 && (
+        <>
+          <Table withTableBorder mb="md">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Concluído em</Table.Th>
+                <Table.Th>Material</Table.Th>
+                <Table.Th>Medidas</Table.Th>
+                <Table.Th ta="right">Valor</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {conta.pedidos.map((pedido) => (
+                <Table.Tr key={pedido.id}>
+                  <Table.Td>
+                    <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
+                      {pedido.concluidoEm ? formatarMomento(pedido.concluidoEm) : "—"}
+                    </Anchor>
+                  </Table.Td>
+                  <Table.Td>{pedido.material.tipo}</Table.Td>
+                  <Table.Td>{formatarMedidas(pedido)}</Table.Td>
+                  <Table.Td ta="right">{formatarMoeda(pedido.valorTotal)}</Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+          <Group justify="space-between">
+            <Text fw={600}>Total: {formatarMoeda(conta.total)}</Text>
+            <Group gap="xs" className="nao-imprimir">
+              <Button variant="default" onClick={() => window.print()}>
+                Imprimir conta em aberto
+              </Button>
+              <Button loading={fechando} onClick={fechar}>
+                Fechar conta
+              </Button>
+            </Group>
+          </Group>
+        </>
+      )}
+    </>
+  );
+}
