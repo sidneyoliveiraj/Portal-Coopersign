@@ -12,6 +12,7 @@ import { filaRouter } from "./routes/fila.routes";
 import { faturamentoRouter } from "./routes/faturamento.routes";
 import { portalRouter } from "./routes/portal.routes";
 import { notificarAlteracoes } from "./lib/tempo-real";
+import { expor, medirRequisicoes } from "./lib/metricas";
 
 export const app = express();
 
@@ -22,7 +23,9 @@ export const origensPermitidas = (process.env.CORS_ORIGIN ?? "http://localhost:5
 
 app.use(cors({ origin: origensPermitidas }));
 app.use(express.json());
+app.use(medirRequisicoes);
 
+app.get("/metrics", expor);
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/usuarios", usuarioRouter);

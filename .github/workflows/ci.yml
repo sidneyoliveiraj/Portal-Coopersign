@@ -50,3 +50,27 @@ jobs:
         with:
           name: cobertura-frontend
           path: frontend/coverage
+
+  sonarcloud:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobertura-backend
+          path: backend/coverage
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobertura-frontend
+          path: frontend/coverage
+      # O Vitest grava os caminhos a partir de cada pasta (src/...); o Sonar le a partir da raiz.
+      - name: Ajustar caminhos da cobertura
+        run: |
+          sed -i 's#^SF:#SF:backend/#' backend/coverage/lcov.info
+          sed -i 's#^SF:#SF:frontend/#' frontend/coverage/lcov.info
+      - uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703 # v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -1,0 +1,144 @@
+name: Deploy
+
+# Publica em producao sozinho quando o CI passa na main.
+# Para voltar a uma versao anterior: Actions > Deploy > Run workflow, informando o commit.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: "Commit a publicar (vazio = ultimo da main)"
+        required: false
+
+concurrency: producao
+
+env:
+  REGISTRO: ghcr.io/sidneyoliveiraj
+
+jobs:
+  imagens:
+    # So publica o CI de um push na main deste repositorio (nunca codigo vindo de fork)
+    # ou uma execucao manual, que exige permissao de escrita no repositorio.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      versao: ${{ steps.versao.outputs.versao }}
+    steps:
+      # No workflow_run o GITHUB_SHA e o ultimo commit da main; no manual, o commit informado.
+      - id: versao
+        env:
+          ESCOLHIDA: ${{ inputs.versao }}
+        run: echo "versao=${ESCOLHIDA:-$GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.versao }}
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Imagem de um commit ja publicado nao e gerada de novo (caso de voltar versao).
+      - name: Gerar e enviar imagens
+        env:
+          VERSAO: ${{ steps.versao.outputs.versao }}
+        run: |
+          for parte in backend frontend; do
+            imagem="$REGISTRO/portal-coopersign-$parte:$VERSAO"
+            if docker manifest inspect "$imagem" > /dev/null 2>&1; then
+              echo "$imagem ja existe"
+            else
+              docker build -t "$imagem" \
+                --label org.opencontainers.image.source=https://github.com/${{ github.repository }} "$parte"
+              docker push "$imagem"
+            fi
+          done
+
+  publicar:
+    needs: imagens
+    # Mesma trava do job anterior: nada vindo de fork chega aos secrets de producao.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    environment:
+      name: producao
+      url: https://${{ vars.DOMINIO }}
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.versao }}
+
+      - name: Montar o .env de producao a partir dos secrets
+        env:
+          TAG: ${{ needs.imagens.outputs.versao }}
+          DOMINIO: ${{ vars.DOMINIO }}
+          POSTGRES_SENHA: ${{ secrets.POSTGRES_SENHA }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          GRAFANA_SENHA: ${{ secrets.GRAFANA_SENHA }}
+          ORGANIZACAO_CADASTRO_ID: ${{ vars.ORGANIZACAO_CADASTRO_ID }}
+          ORGANIZACAO_NOME: ${{ vars.ORGANIZACAO_NOME }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_SENHA: ${{ secrets.ADMIN_SENHA }}
+          SMTP_HOST: ${{ vars.SMTP_HOST }}
+          SMTP_PORT: ${{ vars.SMTP_PORT }}
+          SMTP_USUARIO: ${{ secrets.SMTP_USUARIO }}
+          SMTP_SENHA: ${{ secrets.SMTP_SENHA }}
+          SMTP_REMETENTE: ${{ vars.SMTP_REMETENTE }}
+        run: |
+          umask 077
+          for nome in TAG DOMINIO POSTGRES_SENHA JWT_SECRET GRAFANA_SENHA ORGANIZACAO_CADASTRO_ID ORGANIZACAO_NOME \
+                      ADMIN_EMAIL ADMIN_SENHA SMTP_HOST SMTP_PORT SMTP_USUARIO SMTP_SENHA SMTP_REMETENTE; do
+            printf '%s=%s\n' "$nome" "${!nome}"
+          done > deploy/.env
+
+      - name: Preparar a chave SSH da VM
+        env:
+          CHAVE: ${{ secrets.VM_CHAVE_SSH }}
+          HOST: ${{ secrets.VM_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$CHAVE" > ~/.ssh/id_vm
+          chmod 600 ~/.ssh/id_vm
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+
+      - name: Enviar a configuracao e subir a nova versao
+        env:
+          DESTINO: ${{ secrets.VM_USUARIO }}@${{ secrets.VM_HOST }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ssh -i ~/.ssh/id_vm "$DESTINO" "mkdir -p ~/coopersign"
+          scp -i ~/.ssh/id_vm -r deploy/docker-compose.yml deploy/Caddyfile deploy/prometheus.yml deploy/grafana deploy/.env "$DESTINO:~/coopersign/"
+          ssh -i ~/.ssh/id_vm "$DESTINO" "cd ~/coopersign \
+            && echo '$TOKEN' | docker login ghcr.io -u ${{ github.actor }} --password-stdin \
+            && docker compose pull \
+            && docker compose up -d --remove-orphans \
+            && docker logout ghcr.io \
+            && docker image prune -f"
+
+      - name: Conferir se a nova versao respondeu
+        env:
+          DOMINIO: ${{ vars.DOMINIO }}
+        run: |
+          for tentativa in $(seq 1 30); do
+            if curl -fsS "https://$DOMINIO/api/health"; then exit 0; fi
+            sleep 5
+          done
+          echo "a API nao respondeu em 150 segundos" && exit 1

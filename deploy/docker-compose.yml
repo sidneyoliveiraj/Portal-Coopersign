@@ -1,0 +1,88 @@
+# Ambiente de producao (VM no Azure). O ambiente de desenvolvimento e o
+# docker-compose.yml da raiz, que sobe so o Postgres local.
+# As imagens sao geradas pelo GitHub Actions; TAG e o commit publicado.
+name: coopersign
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMINIO: ${DOMINIO}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_dados:/data
+    depends_on: [frontend, grafana]
+
+  frontend:
+    image: ghcr.io/sidneyoliveiraj/portal-coopersign-frontend:${TAG}
+    restart: unless-stopped
+    depends_on: [backend]
+
+  backend:
+    image: ghcr.io/sidneyoliveiraj/portal-coopersign-backend:${TAG}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://coopersign:${POSTGRES_SENHA}@postgres:5432/coopersign?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      APP_URL: https://${DOMINIO}
+      CORS_ORIGIN: https://${DOMINIO}
+      ORGANIZACAO_CADASTRO_ID: ${ORGANIZACAO_CADASTRO_ID}
+      ORGANIZACAO_NOME: ${ORGANIZACAO_NOME}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_SENHA: ${ADMIN_SENHA}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USUARIO: ${SMTP_USUARIO}
+      SMTP_SENHA: ${SMTP_SENHA}
+      SMTP_REMETENTE: ${SMTP_REMETENTE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: coopersign
+      POSTGRES_PASSWORD: ${POSTGRES_SENHA}
+      POSTGRES_DB: coopersign
+    volumes:
+      - postgres_dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coopersign"]
+      interval: 5s
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_dados:/prometheus
+    depends_on: [backend]
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_SENHA}
+      GF_SERVER_ROOT_URL: https://${DOMINIO}/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana:/etc/grafana/provisioning:ro
+      - grafana_dados:/var/lib/grafana
+    depends_on: [prometheus]
+
+volumes:
+  caddy_dados:
+  postgres_dados:
+  prometheus_dados:
+  grafana_dados:

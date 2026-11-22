@@ -99,10 +99,15 @@ export async function pedirRecuperacao(dados: Record<string, unknown>, enderecoA
         expiraEm: new Date(Date.now() + VALIDADE.RECUPERACAO),
       },
     });
-    await enviarEmail({
-      para: usuario.email,
-      assunto: "Portal Coopersign - nova senha",
-      texto: `Ola, ${usuario.nome}. Para criar uma nova senha, acesse: ${enderecoApp}/definir-senha?token=${token} (vale por 24 horas).`,
-    });
+    try {
+      await enviarEmail({
+        para: usuario.email,
+        assunto: "Portal Coopersign - nova senha",
+        texto: `Ola, ${usuario.nome}. Para criar uma nova senha, acesse: ${enderecoApp}/definir-senha?token=${token} (vale por 24 horas).`,
+      });
+    } catch (erro) {
+      // Falha no SMTP fica no log; a resposta continua igual para nao revelar quem tem conta.
+      console.error("falha ao enviar e-mail de recuperacao", erro);
+    }
   }
 }

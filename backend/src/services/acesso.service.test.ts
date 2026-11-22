@@ -91,6 +91,14 @@ describe("acesso.service", () => {
       expect(emailFalso.enviarEmail.mock.calls[0][0].texto).toContain("http://app/definir-senha?token=");
     });
 
+    it("falha no envio do e-mail nao muda a resposta", async () => {
+      prismaFalso.usuario.findMany.mockResolvedValue([usuario]);
+      emailFalso.enviarEmail.mockRejectedValueOnce(new Error("smtp fora do ar"));
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      await expect(pedirRecuperacao({ email: "p@x.dev" }, "http://app")).resolves.toBeUndefined();
+    });
+
     it("e-mail sem conta nao gera erro nem envia nada", async () => {
       prismaFalso.usuario.findMany.mockResolvedValue([]);
 
