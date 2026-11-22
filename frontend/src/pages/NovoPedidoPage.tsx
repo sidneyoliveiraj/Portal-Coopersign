@@ -22,6 +22,7 @@ import { useConfirmacao } from "../confirmacao";
 import type { Cliente, Material, Pedido, ServicoAdicional } from "../tipos";
 import { arredondarCentavos, cmParaMetros, formatarArea, formatarMoeda, metragemCobrada } from "../formato";
 import { ArquivoSemMedidasError, lerMedidasDoArquivo } from "../medidasArquivo";
+import { lerNomeDoArquivo } from "../nomeArquivo";
 
 type ItemServico = { servicoAdicionalId: string; quantidade: number };
 
@@ -50,22 +51,46 @@ export function NovoPedidoPage() {
   const [lendo, setLendo] = useState(false);
 
   // RF06: o arquivo é lido aqui no navegador; nada é enviado ao servidor.
+  // Primeiro o nome (cliente, material, quantidade e medida pedida); sem medida no nome, lê o conteúdo.
   async function lerArquivo(arquivo: File | null) {
     if (!arquivo) {
       return;
     }
     setLendo(true);
     setLeitura(null);
+    // Sem referência digitada, o nome do arquivo serve para o operador saber qual arte imprimir.
+    setArquivoUrl((atual) => (atual.trim() ? atual : arquivo.name));
+
+    const doNome = lerNomeDoArquivo(arquivo.name, clientes, materiais);
+    const preenchidos: string[] = [];
+    if (doNome.clienteId) {
+      setClienteId((atual) => atual ?? doNome.clienteId ?? null);
+      preenchidos.push("cliente");
+    }
+    if (doNome.materialId) {
+      setMaterialId((atual) => atual ?? doNome.materialId ?? null);
+      preenchidos.push("material");
+    }
+    if (doNome.quantidade) {
+      setQuantidade(doNome.quantidade);
+      preenchidos.push("quantidade");
+    }
+    const doNomeTexto = preenchidos.length ? ` Do nome: ${preenchidos.join(", ")}.` : "";
+
     try {
+      if (doNome.larguraCm && doNome.alturaCm) {
+        setLargura(doNome.larguraCm);
+        setAltura(doNome.alturaCm);
+        setLeitura({ ok: true, texto: `${arquivo.name} (medidas do nome do arquivo).${doNomeTexto} Confira.` });
+        return;
+      }
       const medidas = await lerMedidasDoArquivo(new Uint8Array(await arquivo.arrayBuffer()));
       setLargura(medidas.larguraCm);
       setAltura(medidas.alturaCm);
-      // Sem referência digitada, o nome do arquivo serve para o operador saber qual arte imprimir.
-      setArquivoUrl((atual) => (atual.trim() ? atual : arquivo.name));
-      setLeitura({ ok: true, texto: `${arquivo.name} (${medidas.origem}). Confira as medidas.` });
+      setLeitura({ ok: true, texto: `${arquivo.name} (${medidas.origem}).${doNomeTexto} Confira as medidas.` });
     } catch (e) {
       const mensagem = e instanceof ArquivoSemMedidasError ? e.message : "Não foi possível ler o arquivo.";
-      setLeitura({ ok: false, texto: `${arquivo.name}: ${mensagem}` });
+      setLeitura({ ok: false, texto: `${arquivo.name}: ${mensagem}${doNomeTexto}` });
     } finally {
       setLendo(false);
     }
@@ -188,12 +213,13 @@ export function NovoPedidoPage() {
               <FileButton onChange={lerArquivo} accept=".pdf,.ai,.png,.jpg,.jpeg,.tif,.tiff,.cdr">
                 {(props) => (
                   <Button {...props} variant="default" size="xs" loading={lendo}>
-                    Ler medidas do arquivo
+                    Ler dados do arquivo
                   </Button>
                 )}
               </FileButton>
               <Text size="xs" c={leitura ? (leitura.ok ? "green" : "orange") : "dimmed"}>
-                {leitura?.texto ?? "PDF, PNG, JPEG ou TIFF. O arquivo não é enviado, só lido."}
+                {leitura?.texto ??
+                  "Usa o nome (cliente, material, quantidade, medida) e o conteúdo de PDF, PNG, JPEG ou TIFF. O arquivo não é enviado."}
               </Text>
             </Group>
 

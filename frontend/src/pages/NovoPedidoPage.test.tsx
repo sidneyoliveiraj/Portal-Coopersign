@@ -60,6 +60,29 @@ describe("Novo pedido (RF05, RF08, RF09, RN16)", () => {
     expect(valorNoResumo("Total")).toBe("R$ 100,00");
   });
 
+  it("preenche cliente, material, quantidade e medidas pelo nome do arquivo (RF06)", async () => {
+    apiDoNovoPedido();
+    const usuario = renderizarApp("/pedidos/novo");
+    await screen.findByRole("heading", { name: "Novo pedido" });
+    await screen.findByText("Ler dados do arquivo");
+
+    const nome = "Cliente GRAFICA AURORA_ADESIVO BRILHO 106_Quantidade 2x_Medida 119,7 x 35,6cm_CooperSign.cdr";
+    const seletor = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await usuario.upload(seletor, new File(["sem conteudo"], nome));
+
+    expect(await screen.findByText(/medidas do nome do arquivo/)).toHaveTextContent(
+      "Do nome: cliente, material, quantidade.",
+    );
+    expect(screen.getByRole("textbox", { name: /Cliente/ })).toHaveValue("Gráfica Aurora");
+    expect(semNbsp((screen.getByRole("textbox", { name: /Material/ }) as HTMLInputElement).value)).toBe(
+      "Adesivo brilho 106 (R$ 29,00/m²)",
+    );
+    expect(screen.getByRole("textbox", { name: /Largura/ })).toHaveValue("119,7");
+    expect(screen.getByRole("textbox", { name: /Altura/ })).toHaveValue("35,6");
+    expect(screen.getByRole("textbox", { name: /Quantidade/ })).toHaveValue("2");
+    expect(screen.getByRole("textbox", { name: /Referência do arquivo/ })).toHaveValue(nome);
+  });
+
   it("pede confirmação e envia o pedido em metros, com a referência do arquivo", async () => {
     const api = apiDoNovoPedido();
     const usuario = renderizarApp("/pedidos/novo");
