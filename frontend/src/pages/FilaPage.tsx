@@ -125,7 +125,7 @@ export function FilaPage() {
         <Title order={3}>Fila de produção</Title>
         <Select
           label="Máquina"
-          w={280}
+          w={{ base: "100%", sm: 280 }}
           allowDeselect={false}
           data={maquinas.map((m) => ({
             value: m.id,
@@ -145,79 +145,81 @@ export function FilaPage() {
       {fila?.length === 0 && <Text c="dimmed">Nenhum pedido na fila desta máquina.</Text>}
 
       {fila && fila.length > 0 && (
-        <Table withTableBorder>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>#</Table.Th>
-              <Table.Th>Cliente</Table.Th>
-              <Table.Th>Material</Table.Th>
-              <Table.Th>Medidas</Table.Th>
-              <Table.Th>Arquivo</Table.Th>
-              <Table.Th ta="right">Metragem</Table.Th>
-              <Table.Th>Entrada</Table.Th>
-              <Table.Th>Prazo</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th>Ações</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {fila.map((pedido, indice) => {
-              const status = STATUS_PEDIDO[pedido.status];
-              return (
-                <Table.Tr key={pedido.id}>
-                  <Table.Td>
-                    {podeMover ? (
-                      <CampoPosicao
-                        posicao={indice + 1}
-                        total={fila.length}
-                        aoMover={(posicao) => executar(`/fila/pedidos/${pedido.id}/mover`, { posicao })}
-                      />
-                    ) : (
-                      indice + 1
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
-                      {pedido.cliente.nome}
-                    </Anchor>
-                  </Table.Td>
-                  <Table.Td>{pedido.material.tipo}</Table.Td>
-                  <Table.Td>{formatarMedidas(pedido)}</Table.Td>
-                  <Table.Td maw={220}>
-                    <ReferenciaArquivo referencia={pedido.arquivoUrl} compacto />
-                  </Table.Td>
-                  <Table.Td ta="right">{formatarArea(pedido.metragemTotal)}</Table.Td>
-                  <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
-                  <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
-                  <Table.Td miw={130}>
-                    <Badge color={status.cor} variant="light" style={{ overflow: "visible" }}>
-                      {status.rotulo}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      {pedido.status !== "EM_PRODUCAO" && (
-                        <Button size="xs" onClick={() => atualizarStatus(pedido, "EM_PRODUCAO")}>
-                          Iniciar
-                        </Button>
+        <Table.ScrollContainer minWidth={640}>
+          <Table withTableBorder>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>#</Table.Th>
+                <Table.Th>Cliente</Table.Th>
+                <Table.Th>Material</Table.Th>
+                <Table.Th>Medidas</Table.Th>
+                <Table.Th>Arquivo</Table.Th>
+                <Table.Th ta="right">Metragem</Table.Th>
+                <Table.Th>Entrada</Table.Th>
+                <Table.Th>Prazo</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th>Ações</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {fila.map((pedido, indice) => {
+                const status = STATUS_PEDIDO[pedido.status];
+                return (
+                  <Table.Tr key={pedido.id}>
+                    <Table.Td>
+                      {podeMover ? (
+                        <CampoPosicao
+                          posicao={indice + 1}
+                          total={fila.length}
+                          aoMover={(posicao) => executar(`/fila/pedidos/${pedido.id}/mover`, { posicao })}
+                        />
+                      ) : (
+                        indice + 1
                       )}
-                      {pedido.status === "EM_PRODUCAO" && (
-                        <>
-                          <Button size="xs" color="green" onClick={() => atualizarStatus(pedido, "CONCLUIDO")}>
-                            Concluir
+                    </Table.Td>
+                    <Table.Td>
+                      <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
+                        {pedido.cliente.nome}
+                      </Anchor>
+                    </Table.Td>
+                    <Table.Td>{pedido.material.tipo}</Table.Td>
+                    <Table.Td>{formatarMedidas(pedido)}</Table.Td>
+                    <Table.Td maw={220}>
+                      <ReferenciaArquivo referencia={pedido.arquivoUrl} compacto />
+                    </Table.Td>
+                    <Table.Td ta="right">{formatarArea(pedido.metragemTotal)}</Table.Td>
+                    <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
+                    <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
+                    <Table.Td miw={130}>
+                      <Badge color={status.cor} variant="light" style={{ overflow: "visible" }}>
+                        {status.rotulo}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        {pedido.status !== "EM_PRODUCAO" && (
+                          <Button size="xs" onClick={() => atualizarStatus(pedido, "EM_PRODUCAO")}>
+                            Iniciar
                           </Button>
-                          <Button size="xs" variant="default" onClick={() => atualizarStatus(pedido, "NA_FILA")}>
-                            Voltar para a fila
-                          </Button>
-                        </>
-                      )}
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
+                        )}
+                        {pedido.status === "EM_PRODUCAO" && (
+                          <>
+                            <Button size="xs" color="green" onClick={() => atualizarStatus(pedido, "CONCLUIDO")}>
+                              Concluir
+                            </Button>
+                            <Button size="xs" variant="default" onClick={() => atualizarStatus(pedido, "NA_FILA")}>
+                              Voltar para a fila
+                            </Button>
+                          </>
+                        )}
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
 
       {concluidos.length > 0 && (
@@ -225,27 +227,29 @@ export function FilaPage() {
           <Title order={5} mt="xl" mb="xs">
             Concluídos recentemente
           </Title>
-          <Table withTableBorder>
-            <Table.Tbody>
-              {concluidos.map((pedido) => (
-                <Table.Tr key={pedido.id}>
-                  <Table.Td>
-                    <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
-                      {pedido.cliente.nome}
-                    </Anchor>
-                  </Table.Td>
-                  <Table.Td>{pedido.material.tipo}</Table.Td>
-                  <Table.Td>
-                    <Group gap="xs" justify="flex-end">
-                      <Button size="xs" variant="default" onClick={() => setRetrabalho(pedido)}>
-                        Retrabalho
-                      </Button>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+          <Table.ScrollContainer minWidth={640}>
+            <Table withTableBorder>
+              <Table.Tbody>
+                {concluidos.map((pedido) => (
+                  <Table.Tr key={pedido.id}>
+                    <Table.Td>
+                      <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
+                        {pedido.cliente.nome}
+                      </Anchor>
+                    </Table.Td>
+                    <Table.Td>{pedido.material.tipo}</Table.Td>
+                    <Table.Td>
+                      <Group gap="xs" justify="flex-end">
+                        <Button size="xs" variant="default" onClick={() => setRetrabalho(pedido)}>
+                          Retrabalho
+                        </Button>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         </>
       )}
 

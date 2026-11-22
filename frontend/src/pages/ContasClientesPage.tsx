@@ -119,49 +119,51 @@ export function ContasClientesPage() {
       {contas?.length === 0 && <Text c="dimmed">Nenhuma conta de cliente ainda.</Text>}
 
       {contas && contas.length > 0 && (
-        <Table withTableBorder>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Cliente</Table.Th>
-              <Table.Th>E-mail</Table.Th>
-              <Table.Th>Situação</Table.Th>
-              <Table.Th w={260}>Ações</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {contas.map((conta) => (
-              <Table.Tr key={conta.id}>
-                <Table.Td>{conta.cliente?.nome ?? conta.nome}</Table.Td>
-                <Table.Td>{conta.email}</Table.Td>
-                <Table.Td>
-                  <Badge color={conta.ativo ? "green" : "yellow"} variant="light">
-                    {conta.ativo ? "Ativa" : "Inativa ou aguardando aprovação"}
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Group gap="xs">
-                  {conta.ativo ? (
-                    <Button
-                      size="xs"
-                      variant="default"
-                      onClick={() => acao(`/usuarios/${conta.id}`, "PUT", { ativo: false })}
-                    >
-                      Desativar
-                    </Button>
-                  ) : (
-                    <Button size="xs" onClick={() => acao(`/usuarios/${conta.id}/aprovar`, "POST")}>
-                      Aprovar
-                    </Button>
-                  )}
-                  <Button size="xs" variant="subtle" onClick={() => gerarLinkSenha(conta)}>
-                    Link de nova senha
-                  </Button>
-                  </Group>
-                </Table.Td>
+        <Table.ScrollContainer minWidth={640}>
+          <Table withTableBorder>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Cliente</Table.Th>
+                <Table.Th>E-mail</Table.Th>
+                <Table.Th>Situação</Table.Th>
+                <Table.Th w={260}>Ações</Table.Th>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {contas.map((conta) => (
+                <Table.Tr key={conta.id}>
+                  <Table.Td>{conta.cliente?.nome ?? conta.nome}</Table.Td>
+                  <Table.Td>{conta.email}</Table.Td>
+                  <Table.Td>
+                    <Badge color={conta.ativo ? "green" : "yellow"} variant="light">
+                      {conta.ativo ? "Ativa" : "Inativa ou aguardando aprovação"}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                    {conta.ativo ? (
+                      <Button
+                        size="xs"
+                        variant="default"
+                        onClick={() => acao(`/usuarios/${conta.id}`, "PUT", { ativo: false })}
+                      >
+                        Desativar
+                      </Button>
+                    ) : (
+                      <Button size="xs" onClick={() => acao(`/usuarios/${conta.id}/aprovar`, "POST")}>
+                        Aprovar
+                      </Button>
+                    )}
+                    <Button size="xs" variant="subtle" onClick={() => gerarLinkSenha(conta)}>
+                      Link de nova senha
+                    </Button>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
 
       <Modal opened={aberto} onClose={() => setAberto(false)} title="Criar acesso para cliente">

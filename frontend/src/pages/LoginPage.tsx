@@ -34,7 +34,7 @@ export function LoginPage() {
 
   return (
     <Center h="100vh" bg="coopersign.6">
-      <Paper withBorder p="xl" radius="md" w={380}>
+      <Paper withBorder p="xl" radius="md" w="100%" maw={380}>
         <form onSubmit={enviar}>
           <Stack>
             <Center>
