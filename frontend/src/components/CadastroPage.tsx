@@ -204,42 +204,44 @@ export function CadastroPage({
       {itens?.length === 0 && <Text c="dimmed">Nenhum registro ainda.</Text>}
 
       {itens && itens.length > 0 && (
-        <Table withTableBorder highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              {colunas.map((coluna) => (
-                <Table.Th key={coluna.rotulo} ta={coluna.direita ? "right" : undefined}>
-                  {coluna.rotulo}
-                </Table.Th>
-              ))}
-              <Table.Th w={acaoExtra ? 320 : 190}>Ações</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {itens.map((item) => (
-              <Table.Tr key={item.id}>
+        <Table.ScrollContainer minWidth={640}>
+          <Table withTableBorder highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
                 {colunas.map((coluna) => (
-                  <Table.Td key={coluna.rotulo} ta={coluna.direita ? "right" : undefined}>
-                    {coluna.valor(item)}
-                  </Table.Td>
+                  <Table.Th key={coluna.rotulo} ta={coluna.direita ? "right" : undefined}>
+                    {coluna.rotulo}
+                  </Table.Th>
                 ))}
-                <Table.Td>
-                  <Group gap="xs" wrap="nowrap">
-                    <Button size="xs" variant="default" onClick={() => abrir(item)}>
-                      Editar
-                    </Button>
-                    {podeRemover && (
-                      <Button size="xs" variant="subtle" color="red" onClick={() => remover(item)}>
-                        Remover
-                      </Button>
-                    )}
-                    {acaoExtra?.(item)}
-                  </Group>
-                </Table.Td>
+                <Table.Th w={acaoExtra ? 320 : 190}>Ações</Table.Th>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {itens.map((item) => (
+                <Table.Tr key={item.id}>
+                  {colunas.map((coluna) => (
+                    <Table.Td key={coluna.rotulo} ta={coluna.direita ? "right" : undefined}>
+                      {coluna.valor(item)}
+                    </Table.Td>
+                  ))}
+                  <Table.Td>
+                    <Group gap="xs" wrap="nowrap">
+                      <Button size="xs" variant="default" onClick={() => abrir(item)}>
+                        Editar
+                      </Button>
+                      {podeRemover && (
+                        <Button size="xs" variant="subtle" color="red" onClick={() => remover(item)}>
+                          Remover
+                        </Button>
+                      )}
+                      {acaoExtra?.(item)}
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
 
       <Modal opened={aberto} onClose={() => setAberto(false)} title={`${editando ? "Editar" : "Novo"}: ${singular}`}>

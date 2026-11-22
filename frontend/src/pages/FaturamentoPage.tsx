@@ -174,68 +174,72 @@ export function FaturamentoPage() {
       {contas?.clientes.length === 0 && <Text c="dimmed">Nenhum cliente com conta em aberto até o fim deste período.</Text>}
 
       {contas && contas.clientes.length > 0 && (
-        <Table withTableBorder mb="md" className="nao-imprimir">
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Cliente</Table.Th>
-              <Table.Th ta="right">Pedidos</Table.Th>
-              <Table.Th ta="right">Em aberto</Table.Th>
-              <Table.Th />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {contas.clientes.map((linha) => (
-              <Table.Tr key={linha.clienteId}>
-                <Table.Td>{linha.nome}</Table.Td>
-                <Table.Td ta="right">{linha.quantidade}</Table.Td>
-                <Table.Td ta="right">{formatarMoeda(linha.total)}</Table.Td>
-                <Table.Td ta="right">
-                  <Button size="xs" variant="default" onClick={() => verCliente(linha.clienteId)}>
-                    Ver conta
-                  </Button>
-                </Table.Td>
+        <Table.ScrollContainer minWidth={640} mb="md">
+          <Table withTableBorder className="nao-imprimir">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Cliente</Table.Th>
+                <Table.Th ta="right">Pedidos</Table.Th>
+                <Table.Th ta="right">Em aberto</Table.Th>
+                <Table.Th />
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-          <Table.Tfoot>
-            <Table.Tr>
-              <Table.Th>Total em aberto</Table.Th>
-              <Table.Th />
-              <Table.Th ta="right">{formatarMoeda(contas.total)}</Table.Th>
-              <Table.Th />
-            </Table.Tr>
-          </Table.Tfoot>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {contas.clientes.map((linha) => (
+                <Table.Tr key={linha.clienteId}>
+                  <Table.Td>{linha.nome}</Table.Td>
+                  <Table.Td ta="right">{linha.quantidade}</Table.Td>
+                  <Table.Td ta="right">{formatarMoeda(linha.total)}</Table.Td>
+                  <Table.Td ta="right">
+                    <Button size="xs" variant="default" onClick={() => verCliente(linha.clienteId)}>
+                      Ver conta
+                    </Button>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+            <Table.Tfoot>
+              <Table.Tr>
+                <Table.Th>Total em aberto</Table.Th>
+                <Table.Th />
+                <Table.Th ta="right">{formatarMoeda(contas.total)}</Table.Th>
+                <Table.Th />
+              </Table.Tr>
+            </Table.Tfoot>
+          </Table>
+        </Table.ScrollContainer>
       )}
 
       {conta?.pedidos.length === 0 && <Text c="dimmed">Nenhum pedido em conta em aberto até o fim deste período.</Text>}
 
       {conta && conta.pedidos.length > 0 && (
         <>
-          <Table withTableBorder mb="md">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Concluído em</Table.Th>
-                <Table.Th>Material</Table.Th>
-                <Table.Th>Medidas</Table.Th>
-                <Table.Th ta="right">Valor</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {conta.pedidos.map((pedido) => (
-                <Table.Tr key={pedido.id}>
-                  <Table.Td>
-                    <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
-                      {pedido.concluidoEm ? formatarMomento(pedido.concluidoEm) : "—"}
-                    </Anchor>
-                  </Table.Td>
-                  <Table.Td>{pedido.material.tipo}</Table.Td>
-                  <Table.Td>{formatarMedidas(pedido)}</Table.Td>
-                  <Table.Td ta="right">{formatarMoeda(pedido.valorTotal)}</Table.Td>
+          <Table.ScrollContainer minWidth={640} mb="md">
+            <Table withTableBorder>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Concluído em</Table.Th>
+                  <Table.Th>Material</Table.Th>
+                  <Table.Th>Medidas</Table.Th>
+                  <Table.Th ta="right">Valor</Table.Th>
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+              </Table.Thead>
+              <Table.Tbody>
+                {conta.pedidos.map((pedido) => (
+                  <Table.Tr key={pedido.id}>
+                    <Table.Td>
+                      <Anchor component={Link} to={`/pedidos/${pedido.id}`} size="sm">
+                        {pedido.concluidoEm ? formatarMomento(pedido.concluidoEm) : "—"}
+                      </Anchor>
+                    </Table.Td>
+                    <Table.Td>{pedido.material.tipo}</Table.Td>
+                    <Table.Td>{formatarMedidas(pedido)}</Table.Td>
+                    <Table.Td ta="right">{formatarMoeda(pedido.valorTotal)}</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
           <Group justify="space-between">
             <Text fw={600}>Total: {formatarMoeda(conta.total)}</Text>
             <Group gap="xs" className="nao-imprimir">

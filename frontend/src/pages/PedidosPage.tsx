@@ -118,50 +118,52 @@ export function PedidosPage() {
       )}
 
       {visiveis.length > 0 && (
-        <Table highlightOnHover withTableBorder>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Cliente</Table.Th>
-              <Table.Th>Material</Table.Th>
-              <Table.Th ta="right">Metragem</Table.Th>
-              <Table.Th ta="right">Valor total</Table.Th>
-              <Table.Th>Entrada</Table.Th>
-              <Table.Th>Prazo</Table.Th>
-              <Table.Th>Status</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {visiveis.map((pedido) => {
-              const status = STATUS_PEDIDO[pedido.status];
-              return (
-                <Table.Tr
-                  key={pedido.id}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => navigate(`/pedidos/${pedido.id}`)}
-                >
-                  <Table.Td>{pedido.cliente.nome}</Table.Td>
-                  <Table.Td>{pedido.material.tipo}</Table.Td>
-                  <Table.Td ta="right">{formatarArea(pedido.metragemTotal)}</Table.Td>
-                  <Table.Td ta="right">{formatarMoeda(pedido.valorTotal)}</Table.Td>
-                  <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
-                  <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
-                  <Table.Td>
-                    <Group gap={4} wrap="nowrap">
-                      <Badge color={status.cor} variant="light">
-                        {status.rotulo}
-                      </Badge>
-                      {teveRetrabalho(pedido) && pedido.status !== "RETRABALHO" && (
-                        <Badge color="orange" variant="outline" title="Este pedido já teve retrabalho">
-                          Retrabalho
+        <Table.ScrollContainer minWidth={640}>
+          <Table highlightOnHover withTableBorder>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Cliente</Table.Th>
+                <Table.Th>Material</Table.Th>
+                <Table.Th ta="right">Metragem</Table.Th>
+                <Table.Th ta="right">Valor total</Table.Th>
+                <Table.Th>Entrada</Table.Th>
+                <Table.Th>Prazo</Table.Th>
+                <Table.Th>Status</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {visiveis.map((pedido) => {
+                const status = STATUS_PEDIDO[pedido.status];
+                return (
+                  <Table.Tr
+                    key={pedido.id}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => navigate(`/pedidos/${pedido.id}`)}
+                  >
+                    <Table.Td>{pedido.cliente.nome}</Table.Td>
+                    <Table.Td>{pedido.material.tipo}</Table.Td>
+                    <Table.Td ta="right">{formatarArea(pedido.metragemTotal)}</Table.Td>
+                    <Table.Td ta="right">{formatarMoeda(pedido.valorTotal)}</Table.Td>
+                    <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
+                    <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
+                    <Table.Td>
+                      <Group gap={4} wrap="nowrap">
+                        <Badge color={status.cor} variant="light">
+                          {status.rotulo}
                         </Badge>
-                      )}
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
+                        {teveRetrabalho(pedido) && pedido.status !== "RETRABALHO" && (
+                          <Badge color="orange" variant="outline" title="Este pedido já teve retrabalho">
+                            Retrabalho
+                          </Badge>
+                        )}
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
     </>
   );

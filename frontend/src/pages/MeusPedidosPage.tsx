@@ -12,37 +12,39 @@ function TabelaPedidos({ pedidos }: { pedidos: PedidoDoCliente[] }) {
   const navigate = useNavigate();
 
   return (
-    <Table withTableBorder highlightOnHover>
-      <Table.Thead>
-        <Table.Tr>
-          <Table.Th>Entrada</Table.Th>
-          <Table.Th>Material</Table.Th>
-          <Table.Th>Medidas</Table.Th>
-          <Table.Th>Prazo</Table.Th>
-          <Table.Th ta="right">Valor</Table.Th>
-          <Table.Th>Status</Table.Th>
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>
-        {pedidos.map((pedido) => {
-          const status = STATUS_PEDIDO[pedido.status];
-          return (
-            <Table.Tr key={pedido.id} style={{ cursor: "pointer" }} onClick={() => navigate(`/meus-pedidos/${pedido.id}`)}>
-              <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
-              <Table.Td>{pedido.material.tipo}</Table.Td>
-              <Table.Td>{formatarMedidas(pedido)}</Table.Td>
-              <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
-              <Table.Td ta="right">{formatarMoeda(pedido.valorTotal)}</Table.Td>
-              <Table.Td>
-                <Badge color={status.cor} variant="light">
-                  {status.rotulo}
-                </Badge>
-              </Table.Td>
-            </Table.Tr>
-          );
-        })}
-      </Table.Tbody>
-    </Table>
+    <Table.ScrollContainer minWidth={640}>
+      <Table withTableBorder highlightOnHover>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Entrada</Table.Th>
+            <Table.Th>Material</Table.Th>
+            <Table.Th>Medidas</Table.Th>
+            <Table.Th>Prazo</Table.Th>
+            <Table.Th ta="right">Valor</Table.Th>
+            <Table.Th>Status</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {pedidos.map((pedido) => {
+            const status = STATUS_PEDIDO[pedido.status];
+            return (
+              <Table.Tr key={pedido.id} style={{ cursor: "pointer" }} onClick={() => navigate(`/meus-pedidos/${pedido.id}`)}>
+                <Table.Td>{formatarMomento(pedido.criadoEm)}</Table.Td>
+                <Table.Td>{pedido.material.tipo}</Table.Td>
+                <Table.Td>{formatarMedidas(pedido)}</Table.Td>
+                <Table.Td>{formatarData(pedido.prazoEntrega)}</Table.Td>
+                <Table.Td ta="right">{formatarMoeda(pedido.valorTotal)}</Table.Td>
+                <Table.Td>
+                  <Badge color={status.cor} variant="light">
+                    {status.rotulo}
+                  </Badge>
+                </Table.Td>
+              </Table.Tr>
+            );
+          })}
+        </Table.Tbody>
+      </Table>
+    </Table.ScrollContainer>
   );
 }
 

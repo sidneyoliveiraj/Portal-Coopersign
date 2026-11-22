@@ -300,37 +300,39 @@ export function RelatoriosPage() {
           </SimpleGrid>
 
           <Quadro titulo="Mês a mês">
-            <Table striped>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Mês</Table.Th>
-                  <Table.Th ta="right">Pedidos</Table.Th>
-                  <Table.Th ta="right">m² rodados</Table.Th>
-                  <Table.Th ta="right">m² cobrados</Table.Th>
-                  <Table.Th ta="right">Receita</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {dados.porMes.meses.map((linha) => (
-                  <Table.Tr key={linha.mes}>
-                    <Table.Td>{nomeDoMes(linha.mes)}</Table.Td>
-                    <Table.Td ta="right">{linha.pedidos}</Table.Td>
-                    <Table.Td ta="right">{formatarArea(linha.metragem)}</Table.Td>
-                    <Table.Td ta="right">{formatarArea(linha.metragemCobrada)}</Table.Td>
-                    <Table.Td ta="right">{formatarMoeda(linha.receita)}</Table.Td>
+            <Table.ScrollContainer minWidth={640}>
+              <Table striped>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Mês</Table.Th>
+                    <Table.Th ta="right">Pedidos</Table.Th>
+                    <Table.Th ta="right">m² rodados</Table.Th>
+                    <Table.Th ta="right">m² cobrados</Table.Th>
+                    <Table.Th ta="right">Receita</Table.Th>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-              <Table.Tfoot>
-                <Table.Tr>
-                  <Table.Th>Total do período</Table.Th>
-                  <Table.Th ta="right">{dados.porMes.total.pedidos}</Table.Th>
-                  <Table.Th ta="right">{formatarArea(dados.porMes.total.metragem)}</Table.Th>
-                  <Table.Th ta="right">{formatarArea(dados.porMes.total.metragemCobrada)}</Table.Th>
-                  <Table.Th ta="right">{formatarMoeda(dados.porMes.total.receita)}</Table.Th>
-                </Table.Tr>
-              </Table.Tfoot>
-            </Table>
+                </Table.Thead>
+                <Table.Tbody>
+                  {dados.porMes.meses.map((linha) => (
+                    <Table.Tr key={linha.mes}>
+                      <Table.Td>{nomeDoMes(linha.mes)}</Table.Td>
+                      <Table.Td ta="right">{linha.pedidos}</Table.Td>
+                      <Table.Td ta="right">{formatarArea(linha.metragem)}</Table.Td>
+                      <Table.Td ta="right">{formatarArea(linha.metragemCobrada)}</Table.Td>
+                      <Table.Td ta="right">{formatarMoeda(linha.receita)}</Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+                <Table.Tfoot>
+                  <Table.Tr>
+                    <Table.Th>Total do período</Table.Th>
+                    <Table.Th ta="right">{dados.porMes.total.pedidos}</Table.Th>
+                    <Table.Th ta="right">{formatarArea(dados.porMes.total.metragem)}</Table.Th>
+                    <Table.Th ta="right">{formatarArea(dados.porMes.total.metragemCobrada)}</Table.Th>
+                    <Table.Th ta="right">{formatarMoeda(dados.porMes.total.receita)}</Table.Th>
+                  </Table.Tr>
+                </Table.Tfoot>
+              </Table>
+            </Table.ScrollContainer>
             <Text size="xs" c="dimmed" mt="xs">
               m² rodados: o que a máquina imprimiu. m² cobrados: com o mínimo de 1 m² por unidade (RN16).
             </Text>
