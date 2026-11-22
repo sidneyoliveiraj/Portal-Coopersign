@@ -1,8 +1,8 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 import {
   clienteRepository,
-  ClienteCriarInput,
-  ClienteAtualizarInput,
+  type ClienteCriarInput,
+  type ClienteAtualizarInput,
 } from "../repositories/cliente.repository";
 
 export class ClienteNaoEncontradoError extends Error {

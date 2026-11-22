@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { describe, it, expect, vi } from "vitest";
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { criarNotificador } from "./tempo-real";
 
 function simular(method: string, statusCode: number, usuario?: { organizacaoId: string }) {

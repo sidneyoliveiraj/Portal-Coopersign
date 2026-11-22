@@ -1,8 +1,8 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 import {
   maquinaRepository,
-  MaquinaCriarInput,
-  MaquinaAtualizarInput,
+  type MaquinaCriarInput,
+  type MaquinaAtualizarInput,
 } from "../repositories/maquina.repository";
 
 export class MaquinaNaoEncontradaError extends Error {

@@ -1,13 +1,14 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import {
   pedidoService,
   PedidoInvalidoError,
   PedidoNaoEncontradoError,
 } from "../services/pedido.service";
+import { prismaDaRequisicao } from "../lib/requisicao";
 
 export async function criarPedidoController(req: Request, res: Response) {
   try {
-    const service = pedidoService(req.prisma!);
+    const service = pedidoService(prismaDaRequisicao(req));
     const pedido = await service.criar(req.body ?? {});
     return res.status(201).json({ pedido });
   } catch (erro) {
@@ -19,14 +20,14 @@ export async function criarPedidoController(req: Request, res: Response) {
 }
 
 export async function listarPedidosController(req: Request, res: Response) {
-  const service = pedidoService(req.prisma!);
+  const service = pedidoService(prismaDaRequisicao(req));
   const pedidos = await service.listar();
   return res.status(200).json({ pedidos });
 }
 
 export async function buscarPedidoController(req: Request, res: Response) {
   try {
-    const service = pedidoService(req.prisma!);
+    const service = pedidoService(prismaDaRequisicao(req));
     const pedido = await service.buscarPorId(req.params.id as string);
     return res.status(200).json({ pedido });
   } catch (erro) {
@@ -38,14 +39,14 @@ export async function buscarPedidoController(req: Request, res: Response) {
 }
 
 export async function listarPendentesValidacaoController(req: Request, res: Response) {
-  const service = pedidoService(req.prisma!);
+  const service = pedidoService(prismaDaRequisicao(req));
   const pedidos = await service.listarPendentesValidacao();
   return res.status(200).json({ pedidos });
 }
 
 export async function aprovarPedidoController(req: Request, res: Response) {
   try {
-    const service = pedidoService(req.prisma!);
+    const service = pedidoService(prismaDaRequisicao(req));
     const pedido = await service.aprovar(req.params.id as string, req.body ?? {});
     return res.status(200).json({ pedido });
   } catch (erro) {
@@ -61,7 +62,7 @@ export async function aprovarPedidoController(req: Request, res: Response) {
 
 export async function rejeitarPedidoController(req: Request, res: Response) {
   try {
-    const service = pedidoService(req.prisma!);
+    const service = pedidoService(prismaDaRequisicao(req));
     const pedido = await service.rejeitar(req.params.id as string, req.body ?? {});
     return res.status(200).json({ pedido });
   } catch (erro) {
@@ -77,7 +78,7 @@ export async function rejeitarPedidoController(req: Request, res: Response) {
 
 export async function alterarFormaPagamentoController(req: Request, res: Response) {
   try {
-    const service = pedidoService(req.prisma!);
+    const service = pedidoService(prismaDaRequisicao(req));
     const pedido = await service.alterarFormaPagamento(req.params.id as string, req.body ?? {});
     return res.status(200).json({ pedido });
   } catch (erro) {
@@ -93,7 +94,7 @@ export async function alterarFormaPagamentoController(req: Request, res: Respons
 
 export async function ajustarValorPedidoController(req: Request, res: Response) {
   try {
-    const service = pedidoService(req.prisma!);
+    const service = pedidoService(prismaDaRequisicao(req));
     const pedido = await service.ajustarValor(req.params.id as string, req.body ?? {});
     return res.status(200).json({ pedido });
   } catch (erro) {

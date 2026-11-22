@@ -1,13 +1,14 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import {
   materialService,
   MaterialInvalidoError,
   MaterialNaoEncontradoError,
 } from "../services/material.service";
+import { prismaDaRequisicao } from "../lib/requisicao";
 
 export async function criarMaterialController(req: Request, res: Response) {
   try {
-    const service = materialService(req.prisma!);
+    const service = materialService(prismaDaRequisicao(req));
     const material = await service.criar(req.body);
     return res.status(201).json({ material });
   } catch (erro) {
@@ -19,14 +20,14 @@ export async function criarMaterialController(req: Request, res: Response) {
 }
 
 export async function listarMateriaisController(req: Request, res: Response) {
-  const service = materialService(req.prisma!);
+  const service = materialService(prismaDaRequisicao(req));
   const materiais = await service.listar();
   return res.status(200).json({ materiais });
 }
 
 export async function buscarMaterialController(req: Request, res: Response) {
   try {
-    const service = materialService(req.prisma!);
+    const service = materialService(prismaDaRequisicao(req));
     const material = await service.buscarPorId(req.params.id as string);
     return res.status(200).json({ material });
   } catch (erro) {
@@ -39,7 +40,7 @@ export async function buscarMaterialController(req: Request, res: Response) {
 
 export async function atualizarMaterialController(req: Request, res: Response) {
   try {
-    const service = materialService(req.prisma!);
+    const service = materialService(prismaDaRequisicao(req));
     const material = await service.atualizar(req.params.id as string, req.body);
     return res.status(200).json({ material });
   } catch (erro) {
@@ -55,7 +56,7 @@ export async function atualizarMaterialController(req: Request, res: Response) {
 
 export async function removerMaterialController(req: Request, res: Response) {
   try {
-    const service = materialService(req.prisma!);
+    const service = materialService(prismaDaRequisicao(req));
     await service.remover(req.params.id as string);
     return res.status(204).send();
   } catch (erro) {

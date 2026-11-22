@@ -1,8 +1,8 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 import {
   servicoAdicionalRepository,
-  ServicoAdicionalCriarInput,
-  ServicoAdicionalAtualizarInput,
+  type ServicoAdicionalCriarInput,
+  type ServicoAdicionalAtualizarInput,
 } from "../repositories/servico-adicional.repository";
 
 export class ServicoAdicionalNaoEncontradoError extends Error {

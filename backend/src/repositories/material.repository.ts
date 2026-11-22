@@ -1,5 +1,5 @@
-import { Prisma } from "../generated/prisma/client";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { Prisma } from "../generated/prisma/client";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 export type MaterialCriarInput = Omit<Prisma.MaterialUncheckedCreateInput, "organizacaoId">;
 export type MaterialAtualizarInput = Omit<Prisma.MaterialUncheckedUpdateInput, "organizacaoId">;

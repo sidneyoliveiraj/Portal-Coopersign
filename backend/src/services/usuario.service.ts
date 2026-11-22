@@ -1,6 +1,6 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 import { clienteRepository } from "../repositories/cliente.repository";
-import { usuarioRepository, UsuarioAtualizarInput } from "../repositories/usuario.repository";
+import { usuarioRepository, type UsuarioAtualizarInput } from "../repositories/usuario.repository";
 import { hashSenha } from "./auth.service";
 import { gerarLink } from "./acesso.service";
 import { randomBytes } from "node:crypto";
@@ -111,7 +111,7 @@ export function usuarioService(prisma: PrismaTenantClient) {
 
   async function aprovarCliente(id: string) {
     const usuario = await repository.buscarPorId(id);
-    if (!usuario || usuario.perfil !== "CLIENTE") {
+    if (usuario?.perfil !== "CLIENTE") {
       throw new UsuarioNaoEncontradoError();
     }
     return repository.atualizar(id, { ativo: true });

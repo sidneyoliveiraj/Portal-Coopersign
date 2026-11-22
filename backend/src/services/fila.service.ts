@@ -1,5 +1,5 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
-import { filaRepository, StatusFila } from "../repositories/fila.repository";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
+import { filaRepository, type StatusFila } from "../repositories/fila.repository";
 import { maquinaRepository } from "../repositories/maquina.repository";
 import { pedidoRepository } from "../repositories/pedido.repository";
 import { MaquinaNaoEncontradaError } from "./maquina.service";
@@ -90,10 +90,10 @@ export function filaService(prisma: PrismaTenantClient) {
         conferirGravacao(await repository.voltarParaFila(id, pedido.status, "NA_FILA", null));
       }
     } else if (status === "CONCLUIDO") {
-      if (refazendo) {
+      if (pedido.concluidoEm) {
         const ultimo = pedido.retrabalhos?.at(-1);
         const statusFinal: OrigemRetrabalho = ultimo?.statusOrigem === "FATURADO" ? "FATURADO" : "CONCLUIDO";
-        conferirGravacao(await repository.concluir(id, pedido.status, statusFinal, pedido.concluidoEm!));
+        conferirGravacao(await repository.concluir(id, pedido.status, statusFinal, pedido.concluidoEm));
       } else {
         conferirGravacao(await repository.concluir(id, pedido.status, "CONCLUIDO", new Date()));
       }
@@ -111,7 +111,7 @@ export function filaService(prisma: PrismaTenantClient) {
 
     const custoInformado = dados.custoOperacional;
     const custoOperacional =
-      custoInformado === undefined || custoInformado === null || custoInformado === "" ? NaN : Number(custoInformado);
+      custoInformado === undefined || custoInformado === null || custoInformado === "" ? Number.NaN : Number(custoInformado);
     if (!Number.isFinite(custoOperacional) || custoOperacional <= 0) {
       throw new PedidoInvalidoError("custoOperacional e obrigatorio e deve ser maior que zero");
     }

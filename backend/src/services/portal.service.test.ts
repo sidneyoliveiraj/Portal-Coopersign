@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { portalService, PedidoDoClienteNaoEncontradoError } from "./portal.service";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 function criarPrismaFalso() {
   return {

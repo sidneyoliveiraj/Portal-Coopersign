@@ -1,4 +1,4 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 import { pedidoRepository } from "../repositories/pedido.repository";
 import { clienteRepository } from "../repositories/cliente.repository";
 import { materialRepository } from "../repositories/material.repository";

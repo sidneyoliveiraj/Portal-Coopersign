@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { encaixarPorPrazo, filaService } from "./fila.service";
 import { PedidoInvalidoError, PedidoNaoEncontradoError } from "./pedido.service";
 import { MaquinaNaoEncontradaError } from "./maquina.service";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 function criarPrismaFalso() {
   return {

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { prismaTenant } from "../lib/prisma-tenant";
 
 export function injetarTenant(req: Request, res: Response, next: NextFunction) {

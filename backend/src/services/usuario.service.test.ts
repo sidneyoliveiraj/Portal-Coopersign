@@ -5,7 +5,7 @@ import {
   UsuarioNaoEncontradoError,
   UsuarioSemPermissaoError,
 } from "./usuario.service";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 const admin = { usuarioId: "adm-1", perfil: "ADMINISTRADOR" };
 const gestor = { usuarioId: "ges-1", perfil: "GESTOR" };

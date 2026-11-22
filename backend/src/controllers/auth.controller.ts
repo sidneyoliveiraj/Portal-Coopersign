@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { compararSenha, gerarToken } from "../services/auth.service";
 import { cadastrarCliente, CadastroInvalidoError } from "../services/cadastro-cliente.service";

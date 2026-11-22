@@ -60,7 +60,7 @@ export function FaturamentoPage() {
 
   function verCliente(id: string) {
     setClienteId(id);
-    buscar(undefined, id);
+    void buscar(undefined, id);
   }
 
   async function fechar() {
