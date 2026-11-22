@@ -8,12 +8,13 @@ import {
   meController,
 } from "../controllers/auth.controller";
 import { autenticar } from "../middlewares/auth.middleware";
+import { limiteContas, limiteLogin } from "../lib/limites";
 
 export const authRouter = Router();
 
-authRouter.post("/login", loginController);
-authRouter.post("/cadastro", cadastroClienteController);
+authRouter.post("/login", limiteLogin, loginController);
+authRouter.post("/cadastro", limiteContas, cadastroClienteController);
 authRouter.get("/me", autenticar, meController);
-authRouter.get("/link-senha", consultarLinkController);
-authRouter.post("/definir-senha", definirSenhaController);
-authRouter.post("/esqueci-senha", esqueciSenhaController);
+authRouter.get("/link-senha", limiteContas, consultarLinkController);
+authRouter.post("/definir-senha", limiteContas, definirSenhaController);
+authRouter.post("/esqueci-senha", limiteContas, esqueciSenhaController);

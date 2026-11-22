@@ -1,5 +1,6 @@
-import express, { NextFunction, Request, Response } from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { healthRouter } from "./routes/health.routes";
 import { authRouter } from "./routes/auth.routes";
 import { usuarioRouter } from "./routes/usuario.routes";
@@ -16,13 +17,19 @@ import { expor, medirRequisicoes } from "./lib/metricas";
 
 export const app = express();
 
+// Em producao a requisicao passa pelo Caddy e pelo nginx (rede interna do Docker).
+// Confiar so em proxies de IP privado faz o req.ip ser o do usuario, usado no limite de login.
+app.set("trust proxy", "loopback, linklocal, uniquelocal");
+app.disable("x-powered-by");
+
 export const origensPermitidas = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
   .split(",")
   .map((origem) => origem.trim())
   .filter(Boolean);
 
+app.use(helmet());
 app.use(cors({ origin: origensPermitidas }));
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 app.use(medirRequisicoes);
 
 app.get("/metrics", expor);
