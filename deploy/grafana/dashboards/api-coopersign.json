@@ -28,7 +28,7 @@
       "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "refId": "A", "expr": "process_start_time_seconds{job=\"backend\"} * 1000" }],
-      "fieldConfig": { "defaults": { "unit": "dateTimeFromNow" } },
+      "fieldConfig": { "defaults": { "unit": "dateTimeFromNow", "color": { "mode": "fixed", "fixedColor": "blue" } } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
     {
@@ -53,7 +53,7 @@
       "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [{ "refId": "A", "expr": "process_resident_memory_bytes{job=\"backend\"}" }],
-      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "fixed", "fixedColor": "blue" } } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     },
     {

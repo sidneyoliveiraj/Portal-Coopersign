@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: coopersign
-      POSTGRES_PASSWORD: coopersign
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coopersign}
       POSTGRES_DB: coopersign
     ports:
       - "5432:5432"

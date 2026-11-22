@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (lerToken()) {
-      carregarUsuario().finally(() => setCarregando(false));
+      void carregarUsuario().finally(() => setCarregando(false));
     } else {
       setCarregando(false);
     }
