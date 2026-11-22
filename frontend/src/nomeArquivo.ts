@@ -33,7 +33,7 @@ function semExtensao(nome: string) {
 
 export function medidasDoNome(nome: string) {
   const texto = semExtensao(nome);
-  const achado = new RegExp(String.raw`medida\s*:?\s*${MEDIDA}`, "i").exec(texto) ?? new RegExp(MEDIDA, "i").exec(texto);
+  const achado = new RegExp(String.raw`medida\s*(?::\s*)?${MEDIDA}`, "i").exec(texto) ?? new RegExp(MEDIDA, "i").exec(texto);
   if (!achado) return null;
   const fator = PARA_CM[(achado[3] ?? "cm").toLowerCase()];
   return {
@@ -43,7 +43,7 @@ export function medidasDoNome(nome: string) {
 }
 
 export function quantidadeDoNome(nome: string) {
-  const achado = /(?:quantidade|qtde|qtd)\.?\s*:?\s*(\d+)/i.exec(nome);
+  const achado = /(?:quantidade|qtde|qtd)\.?\s*(?::\s*)?(\d+)/i.exec(nome);
   const quantidade = achado ? Number(achado[1]) : 0;
   return quantidade > 0 ? quantidade : undefined;
 }
@@ -59,7 +59,7 @@ function unicoQueAparece<T>(itens: T[], texto: string, nomeDoItem: (item: T) => 
 }
 
 export function clienteDoNome(nome: string, clientes: Cliente[]) {
-  const rotulo = /cliente\s*:?\s*([^_]+)/i.exec(semExtensao(nome));
+  const rotulo = /cliente\s*(?::\s*)?([^_]+)/i.exec(semExtensao(nome));
   if (rotulo) {
     const procurado = palavras(rotulo[1]).join(" ");
     const iguais = clientes.filter((c) => palavras(c.nome).join(" ") === procurado);

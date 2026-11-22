@@ -20,7 +20,13 @@ env:
 
 jobs:
   imagens:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # So publica o CI de um push na main deste repositorio (nunca codigo vindo de fork)
+    # ou uma execucao manual, que exige permissao de escrita no repositorio.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,17 +34,17 @@ jobs:
     outputs:
       versao: ${{ steps.versao.outputs.versao }}
     steps:
+      # No workflow_run o GITHUB_SHA e o ultimo commit da main; no manual, o commit informado.
       - id: versao
         env:
           ESCOLHIDA: ${{ inputs.versao }}
-          DO_CI: ${{ github.event.workflow_run.head_sha }}
-        run: echo "versao=${ESCOLHIDA:-${DO_CI:-$GITHUB_SHA}}" >> "$GITHUB_OUTPUT"
+        run: echo "versao=${ESCOLHIDA:-$GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.versao.outputs.versao }}
+          ref: ${{ inputs.versao }}
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -72,7 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.imagens.outputs.versao }}
+          ref: ${{ inputs.versao }}
 
       - name: Montar o .env de producao a partir dos secrets
         env:
