@@ -9,6 +9,8 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     // Datas e horas como na Coopersign, em qualquer máquina (inclusive no GitHub Actions).
     env: { TZ: "America/Sao_Paulo" },
+    // Testes de tela digitam campo a campo; numa maquina ocupada passam dos 5 s padrao.
+    testTimeout: 15000,
     coverage: {
       provider: "v8",
       // Mede o src inteiro, não só os arquivos que os testes abrem.

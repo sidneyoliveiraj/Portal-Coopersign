@@ -1,7 +1,8 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { filaService } from "../services/fila.service";
 import { MaquinaNaoEncontradaError } from "../services/maquina.service";
 import { PedidoInvalidoError, PedidoNaoEncontradoError } from "../services/pedido.service";
+import { prismaDaRequisicao } from "../lib/requisicao";
 
 function responderErro(erro: unknown, res: Response) {
   if (erro instanceof PedidoNaoEncontradoError || erro instanceof MaquinaNaoEncontradaError) {
@@ -15,7 +16,7 @@ function responderErro(erro: unknown, res: Response) {
 
 export async function listarFilaController(req: Request, res: Response) {
   try {
-    const resultado = await filaService(req.prisma!).listar(req.params.maquinaId as string);
+    const resultado = await filaService(prismaDaRequisicao(req)).listar(req.params.maquinaId as string);
     return res.status(200).json(resultado);
   } catch (erro) {
     return responderErro(erro, res);
@@ -24,7 +25,7 @@ export async function listarFilaController(req: Request, res: Response) {
 
 export async function atualizarStatusController(req: Request, res: Response) {
   try {
-    const pedido = await filaService(req.prisma!).atualizarStatus(req.params.id as string, req.body ?? {});
+    const pedido = await filaService(prismaDaRequisicao(req)).atualizarStatus(req.params.id as string, req.body ?? {});
     return res.status(200).json({ pedido });
   } catch (erro) {
     return responderErro(erro, res);
@@ -33,7 +34,7 @@ export async function atualizarStatusController(req: Request, res: Response) {
 
 export async function registrarRetrabalhoController(req: Request, res: Response) {
   try {
-    const pedido = await filaService(req.prisma!).registrarRetrabalho(req.params.id as string, req.body ?? {});
+    const pedido = await filaService(prismaDaRequisicao(req)).registrarRetrabalho(req.params.id as string, req.body ?? {});
     return res.status(201).json({ pedido });
   } catch (erro) {
     return responderErro(erro, res);
@@ -42,7 +43,7 @@ export async function registrarRetrabalhoController(req: Request, res: Response)
 
 export async function moverNaFilaController(req: Request, res: Response) {
   try {
-    const pedido = await filaService(req.prisma!).mover(req.params.id as string, req.body ?? {});
+    const pedido = await filaService(prismaDaRequisicao(req)).mover(req.params.id as string, req.body ?? {});
     return res.status(200).json({ pedido });
   } catch (erro) {
     return responderErro(erro, res);

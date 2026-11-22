@@ -1,4 +1,4 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 export type Periodo = { inicio: Date; fim: Date };
 

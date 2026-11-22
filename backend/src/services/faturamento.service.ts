@@ -1,6 +1,6 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 import { clienteRepository } from "../repositories/cliente.repository";
-import { ContaAlteradaError, faturamentoRepository, Periodo } from "../repositories/faturamento.repository";
+import { ContaAlteradaError, faturamentoRepository, type Periodo } from "../repositories/faturamento.repository";
 import { calcularMetragemCobrada } from "./pedido-calculo.service";
 
 export class FaturamentoInvalidoError extends Error {
@@ -182,9 +182,9 @@ export function faturamentoService(prisma: PrismaTenantClient) {
       });
     }
 
-    const duracoes = concluidos
-      .filter((pedido) => pedido.iniciadoEm && pedido.concluidoEm)
-      .map((pedido) => pedido.concluidoEm!.getTime() - pedido.iniciadoEm!.getTime());
+    const duracoes = concluidos.flatMap(({ iniciadoEm, concluidoEm }) =>
+      iniciadoEm && concluidoEm ? [concluidoEm.getTime() - iniciadoEm.getTime()] : [],
+    );
     const tempoMedioHoras =
       duracoes.length > 0
         ? Math.round((duracoes.reduce((soma, d) => soma + d, 0) / duracoes.length / 3_600_000) * 10) / 10

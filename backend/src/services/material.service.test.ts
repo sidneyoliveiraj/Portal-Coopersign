@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 import { materialService, MaterialNaoEncontradoError, MaterialInvalidoError } from "./material.service";
 
 const prismaFalso = {

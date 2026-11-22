@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { Counter, Histogram, Registry, collectDefaultMetrics } from "prom-client";
 
 // Metricas lidas pelo Prometheus em GET /metrics (rota interna, nao passa pelo proxy publico).

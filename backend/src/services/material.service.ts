@@ -1,8 +1,8 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 import {
   materialRepository,
-  MaterialCriarInput,
-  MaterialAtualizarInput,
+  type MaterialCriarInput,
+  type MaterialAtualizarInput,
 } from "../repositories/material.repository";
 
 export class MaterialNaoEncontradoError extends Error {

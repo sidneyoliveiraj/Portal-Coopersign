@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
-import { Prisma } from "../generated/prisma/client";
+import type { Prisma } from "../generated/prisma/client";
 import { prisma } from "../lib/prisma";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 import { enviarEmail } from "../lib/email";
 import { hashSenha } from "./auth.service";
 

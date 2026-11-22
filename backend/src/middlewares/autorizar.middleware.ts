@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 
 export function autorizar(...perfisPermitidos: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {

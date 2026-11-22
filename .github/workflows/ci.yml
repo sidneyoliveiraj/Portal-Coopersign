@@ -20,8 +20,9 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate
+      - run: npm ci --ignore-scripts
+      - run: npm run prisma:generate
+      - run: npm run lint
       - run: npm run build
       - run: npm run test:coverage
       - uses: actions/upload-artifact@v4
@@ -42,7 +43,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
       - run: npm run build
       - run: npm run test:coverage
       - uses: actions/upload-artifact@v4

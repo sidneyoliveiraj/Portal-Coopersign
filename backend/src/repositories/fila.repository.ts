@@ -1,5 +1,5 @@
-import { StatusPedido } from "../generated/prisma/enums";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { StatusPedido } from "../generated/prisma/enums";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 const dadosListagem = { cliente: true, material: true };
 

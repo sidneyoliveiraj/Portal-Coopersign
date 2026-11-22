@@ -1,5 +1,5 @@
-import { Server as ServidorHttp } from "node:http";
-import { NextFunction, Request, Response } from "express";
+import type { Server as ServidorHttp } from "node:http";
+import type { NextFunction, Request, Response } from "express";
 import { Server } from "socket.io";
 import { verificarToken } from "../services/auth.service";
 

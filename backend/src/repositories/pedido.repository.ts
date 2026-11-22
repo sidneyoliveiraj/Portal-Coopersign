@@ -1,5 +1,5 @@
-import { FormaPagamento, Prisma } from "../generated/prisma/client";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { FormaPagamento, Prisma } from "../generated/prisma/client";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 export type PedidoCriarInput = Omit<Prisma.PedidoUncheckedCreateInput, "organizacaoId">;
 

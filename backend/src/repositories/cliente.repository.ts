@@ -1,5 +1,5 @@
-import { Prisma } from "../generated/prisma/client";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { Prisma } from "../generated/prisma/client";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 export type ClienteCriarInput = Omit<Prisma.ClienteUncheckedCreateInput, "organizacaoId">;
 export type ClienteAtualizarInput = Omit<Prisma.ClienteUncheckedUpdateInput, "organizacaoId">;

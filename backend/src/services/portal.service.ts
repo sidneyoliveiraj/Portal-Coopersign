@@ -1,4 +1,4 @@
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 export class PedidoDoClienteNaoEncontradoError extends Error {
   constructor() {

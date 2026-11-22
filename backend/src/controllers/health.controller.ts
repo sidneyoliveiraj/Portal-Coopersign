@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 
-export function healthController(req: Request, res: Response) {
+export function healthController(_req: Request, res: Response) {
   res.status(200).json({ status: "OK" });
 }

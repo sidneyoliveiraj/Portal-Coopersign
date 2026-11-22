@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { faturamentoService, FaturamentoInvalidoError, resumoPorMes } from "./faturamento.service";
-import { PrismaTenantClient } from "../lib/prisma-tenant";
+import type { PrismaTenantClient } from "../lib/prisma-tenant";
 
 const periodoValido = { inicio: "2026-11-01", fim: "2026-11-30" };
 
