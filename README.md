@@ -97,6 +97,10 @@ deploy/      docker-compose de produção, Caddyfile, Prometheus e painel do Gra
 
 Abra uma issue, crie uma branch a partir da `main`, escreva o teste antes do código e abra um pull request. O CI e o Quality Gate do SonarCloud precisam passar.
 
+## Licença
+
+Código sob a licença [MIT](LICENSE).
+
 ## Licenças de terceiros
 
 O projeto usa apenas bibliotecas de código aberto com licenças permissivas: MIT (React, Mantine, Express, Socket.io, bcrypt, helmet, jsonwebtoken, Recharts, pdf-lib), Apache 2.0 (Prisma, prom-client), BSD-2-Clause (dotenv) e MIT-0 (Nodemailer). Na infraestrutura: PostgreSQL (PostgreSQL License), Caddy e Prometheus (Apache 2.0) e Grafana (AGPL 3.0, usado sem modificação).
