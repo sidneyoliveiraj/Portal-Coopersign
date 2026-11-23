@@ -128,6 +128,8 @@ jobs:
           scp -i ~/.ssh/id_vm -r deploy/docker-compose.yml deploy/Caddyfile deploy/prometheus.yml deploy/grafana deploy/.env "$DESTINO:~/coopersign/"
           # O compose so recria um container quando a imagem muda, entao o Caddy e o
           # Prometheus precisam reler a configuracao que acabou de ser copiada.
+          # No fim, apaga as imagens que nenhum container usa (as versoes antigas tem
+          # mais de 1 GB cada e encheriam o disco); para voltar versao, o GHCR tem todas.
           ssh -i ~/.ssh/id_vm "$DESTINO" "cd ~/coopersign \
             && echo '$TOKEN' | docker login ghcr.io -u ${{ github.actor }} --password-stdin \
             && docker compose pull \
@@ -135,7 +137,7 @@ jobs:
             && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile \
             && docker compose kill -s SIGHUP prometheus \
             && docker logout ghcr.io \
-            && docker image prune -f"
+            && docker image prune -af"
 
       - name: Conferir se a nova versao respondeu
         env:
