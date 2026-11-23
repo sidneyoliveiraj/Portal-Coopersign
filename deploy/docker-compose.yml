@@ -57,6 +57,29 @@ services:
       interval: 5s
       retries: 10
 
+  # Copia do banco uma vez por dia em ~/coopersign/backups, guardando os ultimos 14 dias.
+  # Restaurar: pg_restore --clean -d coopersign <arquivo> (ver a Wiki, Deploy e operacao).
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: coopersign
+      PGPASSWORD: ${POSTGRES_SENHA}
+      PGDATABASE: coopersign
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        while true; do
+          pg_dump -Fc -f /backups/coopersign-$$(date +%F).dump && find /backups -name '*.dump' -mtime +14 -delete
+          sleep 86400
+        done
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   prometheus:
     image: prom/prometheus:v2.55.1
     restart: unless-stopped
