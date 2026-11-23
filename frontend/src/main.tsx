@@ -7,11 +7,11 @@ import "@mantine/charts/styles.css";
 import { AuthProvider } from "./auth";
 import { ConfirmacaoProvider } from "./confirmacao";
 import { App } from "./App";
-import { tema } from "./tema";
+import { tema, variaveisCss } from "./tema";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <MantineProvider theme={tema}>
+    <MantineProvider theme={tema} cssVariablesResolver={variaveisCss}>
       <ConfirmacaoProvider>
         <BrowserRouter>
           <AuthProvider>
