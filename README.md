@@ -55,6 +55,7 @@ docker compose up -d                  # PostgreSQL na porta 5432
 
 cd backend
 npm install
+npm run prisma:generate               # gera o cliente do Prisma (não vai para o Git)
 cp .env.example .env
 npx prisma migrate deploy
 npx tsx prisma/seed.ts                # usuários de teste, senha senha123
