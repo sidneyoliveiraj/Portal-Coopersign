@@ -1,12 +1,30 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { Perfil } from "../generated/prisma/enums";
 
 const SALT_ROUNDS = 10;
 
 export interface PayloadToken {
   usuarioId: string;
   organizacaoId: string;
-  perfil: string;
+  perfil: Perfil;
+}
+
+const PERFIS: string[] = Object.values(Perfil);
+
+// O jwt.verify garante a assinatura, nao o formato: confere os campos antes de usar.
+function ehPayloadToken(dado: unknown): dado is PayloadToken {
+  if (typeof dado !== "object" || dado === null) {
+    return false;
+  }
+
+  const { usuarioId, organizacaoId, perfil } = dado as Record<string, unknown>;
+  return (
+    typeof usuarioId === "string" &&
+    typeof organizacaoId === "string" &&
+    typeof perfil === "string" &&
+    PERFIS.includes(perfil)
+  );
 }
 
 export async function hashSenha(senha: string): Promise<string> {
@@ -32,5 +50,10 @@ export function verificarToken(token: string): PayloadToken {
     throw new Error("JWT_SECRET nao configurado no .env");
   }
 
-  return jwt.verify(token, segredo) as PayloadToken;
+  const dado = jwt.verify(token, segredo);
+  if (!ehPayloadToken(dado)) {
+    throw new Error("token com formato invalido");
+  }
+
+  return dado;
 }
