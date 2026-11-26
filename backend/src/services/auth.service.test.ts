@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import jwt from "jsonwebtoken";
-import { hashSenha, compararSenha, gerarToken, verificarToken } from "./auth.service";
+import { hashSenha, compararSenha, gerarToken, verificarToken, type PayloadToken } from "./auth.service";
 
-const payload = { usuarioId: "usu-1", organizacaoId: "org-1", perfil: "GESTOR" };
+const payload: PayloadToken = { usuarioId: "usu-1", organizacaoId: "org-1", perfil: "GESTOR" };
 
 describe("auth.service (RF32, RF33)", () => {
   afterEach(() => {
@@ -31,6 +31,18 @@ describe("auth.service (RF32, RF33)", () => {
     const falso = jwt.sign(payload, "outro-segredo");
 
     expect(() => verificarToken(falso)).toThrow();
+  });
+
+  it("recusa token bem assinado mas com formato errado", () => {
+    vi.stubEnv("JWT_SECRET", "segredo-teste");
+    const semPerfil = jwt.sign({ usuarioId: "usu-1", organizacaoId: "org-1" }, "segredo-teste");
+    const perfilInventado = jwt.sign({ ...payload, perfil: "SUPERADMIN" }, "segredo-teste");
+    const organizacaoNumero = jwt.sign({ ...payload, organizacaoId: 1 }, "segredo-teste");
+    const textoSimples = jwt.sign("so-um-texto", "segredo-teste");
+
+    for (const token of [semPerfil, perfilInventado, organizacaoNumero, textoSimples]) {
+      expect(() => verificarToken(token)).toThrow("token com formato invalido");
+    }
   });
 
   it("nao gera nem confere token sem JWT_SECRET", () => {
